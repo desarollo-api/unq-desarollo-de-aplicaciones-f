@@ -2,6 +2,7 @@ package unq.desapp.futbol.webservice;
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import reactor.core.publisher.Mono;
 import unq.desapp.futbol.model.Player;
 import unq.desapp.futbol.service.FootballDataService;
 
@@ -16,8 +17,9 @@ public class PlayerController {
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<Player> getPlayerById(@PathVariable Long id) {
-        Player player = footballDataService.getPlayerById(id).block(); // .block() converts Mono to a blocking call
-        return ResponseEntity.ok(player);
+    public Mono<ResponseEntity<Player>> getPlayerById(@PathVariable Long id) {
+        return footballDataService.getPlayerById(id)
+                .map(ResponseEntity::ok)
+                .defaultIfEmpty(ResponseEntity.notFound().build());
     }
 }

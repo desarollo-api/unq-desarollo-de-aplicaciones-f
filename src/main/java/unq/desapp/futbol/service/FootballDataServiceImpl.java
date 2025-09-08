@@ -1,5 +1,7 @@
 package unq.desapp.futbol.service;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
@@ -8,6 +10,8 @@ import unq.desapp.futbol.model.Player;
 
 @Service
 public class FootballDataServiceImpl implements FootballDataService {
+
+    private static final Logger logger = LoggerFactory.getLogger(FootballDataServiceImpl.class);
 
     private final WebClient webClient;
 
@@ -26,8 +30,7 @@ public class FootballDataServiceImpl implements FootballDataService {
                 .retrieve()
                 .bodyToMono(Player.class)
                 .doOnError(error -> {
-                    // A proper logger should be used here (e.g., SLF4J)
-                    System.err.println("Error fetching player data: " + error.getMessage());
+                    logger.error("Error fetching player data for id {}: {}", id, error.getMessage());
                 });
     }
 }
