@@ -12,14 +12,17 @@ import unq.desapp.futbol.model.Player;
 public class FootballDataServiceImpl implements FootballDataService {
 
     private static final Logger logger = LoggerFactory.getLogger(FootballDataServiceImpl.class);
-
     private final WebClient webClient;
+    private final ScrapingService scrapingService;
 
-    public FootballDataServiceImpl(@Value("${football.api.baseurl}") String baseUrl,
-                                   @Value("${football.api.token}") String apiToken) {
+    public FootballDataServiceImpl(ScrapingService scrapingService,
+                                   @Value("${football.api.baseurl}") String baseUrl,
+                                   @Value("${football.api.token}") String apiToken
+                                   ) {
+        this.scrapingService = scrapingService;
         this.webClient = WebClient.builder()
                 .baseUrl(baseUrl)
-                .defaultHeader("X-Auth-Token", apiToken) // Set token for all requests from this client
+                .defaultHeader("X-Auth-Token", apiToken)
                 .build();
     }
 
@@ -29,8 +32,16 @@ public class FootballDataServiceImpl implements FootballDataService {
                 .uri("/persons/{id}", id)
                 .retrieve()
                 .bodyToMono(Player.class)
-                .doOnError(error -> {
-                    logger.error("Error fetching player data for id {}: {}", id, error.getMessage());
-                });
+                .flatMap(this::enrichPlayerWithRating)
+                .doOnError(error -> logger.error("Error fetching player data for id {}: {}", id, error.getMessage()));
+    }
+
+    private Mono<Player> enrichPlayerWithRating(Player player) {
+        return scrapingService.getPlayerRating(player.getName())
+                .map(rating -> {
+                    player.setRating(rating);
+                    return player;
+                })
+                .defaultIfEmpty(player); // Si no se encuentra rating, devuelve el jugador original
     }
 }
