@@ -37,9 +37,22 @@ jobs:
     - name: Build application
       run: ./gradlew build
 
+    - name: Generate test coverage report
+      run: ./gradlew jacocoTestReport
+
+    - name: Verify test coverage
+      run: ./gradlew jacocoTestCoverageVerification
+
     - name: Upload test results
       uses: actions/upload-artifact@v4
       if: always()
       with:
         name: test-results
         path: build/test-results/test/
+
+    - name: Upload coverage report
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: coverage-report
+        path: build/reports/jacoco/test/html/
