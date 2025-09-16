@@ -5,8 +5,12 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import unq.desapp.futbol.model.Player;
+import unq.desapp.futbol.model.Team;
+import unq.desapp.futbol.model.TeamDetails;
+import unq.desapp.futbol.model.TeamListResponse;
 
 @Service
 public class FootballDataServiceImpl implements FootballDataService {
@@ -34,6 +38,24 @@ public class FootballDataServiceImpl implements FootballDataService {
                 .bodyToMono(Player.class)
                 .flatMap(this::enrichPlayerWithRating)
                 .doOnError(error -> logger.error("Error fetching player data for id {}: {}", id, error.getMessage()));
+    }
+
+    @Override
+    public Flux<Team> getTeams() {
+        return this.webClient.get()
+                .uri("/teams")
+                .retrieve()
+                .bodyToMono(TeamListResponse.class)
+                .flatMapMany(response -> Flux.fromIterable(response.getTeams()))
+                .doOnError(error -> logger.error("Error fetching teams: {}", error.getMessage()));
+    }
+
+    @Override
+    public Mono<TeamDetails> getTeamById(Long teamId) {
+        return this.webClient.get()
+                .uri("/teams/{id}", teamId)
+                .retrieve()
+                .bodyToMono(TeamDetails.class);
     }
 
     private Mono<Player> enrichPlayerWithRating(Player player) {
