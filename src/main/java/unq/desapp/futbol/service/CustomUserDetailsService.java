@@ -5,6 +5,7 @@ import java.util.List;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import unq.desapp.futbol.model.Role;
 import unq.desapp.futbol.model.User;
@@ -13,17 +14,17 @@ import unq.desapp.futbol.model.User;
 public class CustomUserDetailsService implements UserDetailsService {
     private final List<User> users = new ArrayList<>();
 
-    public CustomUserDetailsService() {
+    public CustomUserDetailsService(PasswordEncoder passwordEncoder) {
         users.add(new User(
                 "user@example.com",
-                "password",
+                passwordEncoder.encode("password"),
                 "John",
                 "User",
                 Role.USER
         ));
         users.add(new User(
                 "admin@example.com",
-                "adminpass",
+                passwordEncoder.encode("adminpass"),
                 "Jane",
                 "Admin",
                 Role.ADMIN

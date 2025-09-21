@@ -6,11 +6,13 @@ import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
 import java.util.Date;
 import javax.crypto.SecretKey;
+import lombok.Getter;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Component;
 
 @Component
+@Getter
 public class JwtTokenProvider {
     private final Long expirationTime;
     private final SecretKey key;
