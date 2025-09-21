@@ -1,14 +1,19 @@
 package unq.desapp.futbol.security;
 
 import java.util.List;
+import lombok.AccessLevel;
+import lombok.NoArgsConstructor;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 
+@NoArgsConstructor(access = AccessLevel.PRIVATE)
 final class Constants {
+    @NoArgsConstructor(access = AccessLevel.PRIVATE)
     final class Auth {
         static final String PATTERN = "/auth/**";
     }
 
+    @NoArgsConstructor(access = AccessLevel.PRIVATE)
     final class Cors {
         static final List<String> ALL_ALLOWED = List.of("*");
         static final List<String> ALLOWED_METHODS = List.of(
@@ -24,6 +29,7 @@ final class Constants {
         static final String PATTERN = "/**";
     }
 
+    @NoArgsConstructor(access = AccessLevel.PRIVATE)
     final class Jwt {
         static final String DEFAULT = "";
         static final String PREFIX = "Bearer ";
