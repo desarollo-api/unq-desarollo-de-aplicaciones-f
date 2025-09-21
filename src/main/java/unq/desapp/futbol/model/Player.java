@@ -12,15 +12,14 @@ import lombok.NoArgsConstructor;
 @JsonIgnoreProperties(ignoreUnknown = true)
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class Player {
-    private Long id;
     private String name;
-    private String firstName;
-    private String lastName;
-    private String dateOfBirth;
+    private Integer age;
     private String nationality;
     private String position;
-    private Integer shirtNumber;
-    private String lastUpdated;
-    private Team currentTeam;
     private Double rating;
+    private Integer matches;
+    private Integer goals;
+    private Integer assist;
+    private Integer redCards;
+    private Integer yellowCards;
 }

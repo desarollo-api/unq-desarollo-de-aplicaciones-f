@@ -6,6 +6,9 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Mono;
+import unq.desapp.futbol.model.Player;
+
+import java.util.List;
 
 @Service
 public class FootballDataServiceImpl implements FootballDataService {
@@ -25,7 +28,7 @@ public class FootballDataServiceImpl implements FootballDataService {
     }
 
     @Override
-    public Mono<String> getTeamSquad(String teamName, String country) {
-        return scrapingService.findTeamPage(teamName, country);
+    public Mono<List<Player>> getTeamSquad(String teamName, String country) {
+        return scrapingService.getTeamSquad(teamName, country);
     }
 }
