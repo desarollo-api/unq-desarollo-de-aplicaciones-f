@@ -21,6 +21,7 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 public class SecurityConfig {
     private static final String AUTH_PATTERN = "/auth/**";
 
+    private final JwtAuthenticationEntryPoint jwtAuthenticationEntryPoint;
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
 
     @Bean
@@ -36,12 +37,17 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity httpSecurity) throws Exception {
         return httpSecurity
-            .csrf(csrf -> csrf.disable())
-            .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-            .authorizeHttpRequests(
-                auth -> auth
-                    .requestMatchers(AUTH_PATTERN).permitAll()
-                    .anyRequest().authenticated())
+            .csrf(csrfConfig -> csrfConfig.disable())
+            .sessionManagement(sessionConfig ->
+                sessionConfig.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+            .authorizeHttpRequests(requestConfig ->
+                requestConfig
+                    .requestMatchers(AUTH_PATTERN)
+                    .permitAll()
+                    .anyRequest()
+                    .authenticated())
+            .exceptionHandling(exceptionConfig ->
+                exceptionConfig.authenticationEntryPoint(jwtAuthenticationEntryPoint))
             .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
             .build();
     }
