@@ -1,4 +1,4 @@
-package unq.desapp.futbol;
+package unq.desapp.futbol.webservice;
 
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Import;
@@ -8,4 +8,4 @@ import unq.desapp.futbol.security.TestSecurityConfig;
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @ActiveProfiles("test")
 @Import(TestSecurityConfig.class)
-abstract class BaseTest {}
+abstract class BaseControllerTest {}

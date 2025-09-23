@@ -1,4 +1,4 @@
-package unq.desapp.futbol;
+package unq.desapp.futbol.webservice;
 
 import static org.mockito.Mockito.when;
 
@@ -14,7 +14,7 @@ import unq.desapp.futbol.model.Player;
 import unq.desapp.futbol.service.FootballDataService;
 
 @AutoConfigureWebTestClient
-public class TeamControllerTest extends BaseTest {
+public class TeamControllerTest extends BaseControllerTest {
 
     @Autowired
     private WebTestClient webTestClient;
