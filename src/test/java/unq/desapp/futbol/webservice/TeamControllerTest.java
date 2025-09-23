@@ -1,23 +1,20 @@
-package unq.desapp.futbol;
+package unq.desapp.futbol.webservice;
 
+import static org.mockito.Mockito.when;
+
+import java.util.Collections;
+import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.reactive.AutoConfigureWebTestClient;
-import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.test.web.reactive.server.WebTestClient;
 import reactor.core.publisher.Mono;
 import unq.desapp.futbol.model.Player;
 import unq.desapp.futbol.service.FootballDataService;
-import java.util.Collections;
-import java.util.List;
 
-import static org.mockito.Mockito.when;
-
-
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @AutoConfigureWebTestClient
-public class TeamControllerTest {
+class TeamControllerTest extends BaseControllerTest {
 
     @Autowired
     private WebTestClient webTestClient;
