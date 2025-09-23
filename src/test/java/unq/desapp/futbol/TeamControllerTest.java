@@ -14,7 +14,7 @@ import unq.desapp.futbol.model.Player;
 import unq.desapp.futbol.service.FootballDataService;
 
 @AutoConfigureWebTestClient
-public class TeamControllerTest extends BaseTest {
+class TeamControllerTest extends BaseTest {
 
     @Autowired
     private WebTestClient webTestClient;
