@@ -1,6 +1,7 @@
 package unq.desapp.futbol.security;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.ReactiveAuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -9,8 +10,10 @@ import org.springframework.security.core.userdetails.ReactiveUserDetailsService;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Mono;
+import unq.desapp.futbol.constants.AuthenticationManager;
 
 @Component
+@Qualifier(AuthenticationManager.USER_PASSWORD)
 @RequiredArgsConstructor
 public class ReactiveUserPasswordAuthenticationManager implements ReactiveAuthenticationManager {
     private final ReactiveUserDetailsService userDetailsService;

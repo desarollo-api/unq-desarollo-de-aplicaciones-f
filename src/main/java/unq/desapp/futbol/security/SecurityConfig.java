@@ -1,8 +1,10 @@
 package unq.desapp.futbol.security;
 
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
+import org.springframework.security.authentication.ReactiveAuthenticationManager;
 import org.springframework.security.config.annotation.method.configuration.EnableReactiveMethodSecurity;
 import org.springframework.security.config.annotation.web.reactive.EnableWebFluxSecurity;
 import org.springframework.security.config.web.server.SecurityWebFiltersOrder;
@@ -15,6 +17,7 @@ import org.springframework.security.web.server.authentication.ServerAuthenticati
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.reactive.CorsConfigurationSource;
 import org.springframework.web.cors.reactive.UrlBasedCorsConfigurationSource;
+import unq.desapp.futbol.constants.AuthenticationManager;
 import unq.desapp.futbol.security.Constants.Auth;
 import unq.desapp.futbol.security.Constants.Cors;
 
@@ -32,7 +35,7 @@ public class SecurityConfig {
     @Profile("!test")
     public SecurityWebFilterChain securityWebFilterChain(
         ServerHttpSecurity http,
-        ReactiveJwtAuthenticationManager authenticationManager,
+        @Qualifier(AuthenticationManager.JWT) ReactiveAuthenticationManager authenticationManager,
         ReactiveJwtAuthenticationConverter authenticationConverter,
         ReactiveAuthenticationEntryPoint authenticationEntryPoint) {
         AuthenticationWebFilter authenticationWebFilter =
@@ -58,7 +61,7 @@ public class SecurityConfig {
     }
 
     private AuthenticationWebFilter buildAuthenticationWebFilter(
-        ReactiveJwtAuthenticationManager authenticationManager,
+        ReactiveAuthenticationManager authenticationManager,
         ReactiveJwtAuthenticationConverter authenticationConverter,
         ReactiveAuthenticationEntryPoint authenticationEntryPoint) {
         AuthenticationWebFilter filter = new AuthenticationWebFilter(authenticationManager);
