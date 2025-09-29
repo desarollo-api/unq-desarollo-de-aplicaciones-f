@@ -3,26 +3,24 @@ package unq.desapp.futbol.security;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
-import org.springframework.security.authentication.AuthenticationManager;
-import org.springframework.security.config.Customizer;
-import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
-import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
-import org.springframework.security.config.annotation.web.builders.HttpSecurity;
-import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
-import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.config.annotation.method.configuration.EnableReactiveMethodSecurity;
+import org.springframework.security.config.annotation.web.reactive.EnableWebFluxSecurity;
+import org.springframework.security.config.web.server.SecurityWebFiltersOrder;
+import org.springframework.security.config.web.server.ServerHttpSecurity;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.security.web.SecurityFilterChain;
-import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.security.web.server.SecurityWebFilterChain;
+import org.springframework.security.web.server.authentication.AuthenticationWebFilter;
+import org.springframework.security.web.server.authentication.ServerAuthenticationEntryPointFailureHandler;
 import org.springframework.web.cors.CorsConfiguration;
-import org.springframework.web.cors.CorsConfigurationSource;
-import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
+import org.springframework.web.cors.reactive.CorsConfigurationSource;
+import org.springframework.web.cors.reactive.UrlBasedCorsConfigurationSource;
 import unq.desapp.futbol.security.Constants.Auth;
 import unq.desapp.futbol.security.Constants.Cors;
 
 @Configuration
-@EnableWebSecurity
-@EnableMethodSecurity
+@EnableWebFluxSecurity
+@EnableReactiveMethodSecurity
 public class SecurityConfig {
 
     @Bean
@@ -31,36 +29,49 @@ public class SecurityConfig {
     }
 
     @Bean
-    public AuthenticationManager authenticationManager(
-            AuthenticationConfiguration authenticationConfiguration) throws Exception {
-        return authenticationConfiguration.getAuthenticationManager();
-    }
-
-    @Bean
     @Profile("!test")
-    public SecurityFilterChain filterChain(
-            HttpSecurity httpSecurity,
-            JwtAuthenticationFilter jwtAuthenticationFilter,
-            JwtAuthenticationEntryPoint jwtAuthenticationEntryPoint) throws Exception {
-        return httpSecurity
-            .csrf(csrfConfig -> csrfConfig.disable())
-            .cors(Customizer.withDefaults())
-            .sessionManagement(sessionConfig ->
-                sessionConfig.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-            .authorizeHttpRequests(requestConfig ->
-                requestConfig
-                    .requestMatchers(Auth.PATTERN)
-                    .permitAll()
-                    .anyRequest()
-                    .authenticated())
-            .exceptionHandling(exceptionConfig ->
-                exceptionConfig.authenticationEntryPoint(jwtAuthenticationEntryPoint))
-            .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
+    public SecurityWebFilterChain securityWebFilterChain(
+        ServerHttpSecurity http,
+        ReactiveJwtAuthenticationManager authenticationManager,
+        ReactiveJwtAuthenticationConverter authenticationConverter,
+        ReactiveAuthenticationEntryPoint authenticationEntryPoint) {
+        AuthenticationWebFilter authenticationWebFilter =
+            buildAuthenticationWebFilter(
+                authenticationManager,
+                authenticationConverter,
+                authenticationEntryPoint);
+        CorsConfigurationSource corsConfigurationSource =
+            buildCorsConfigurationSource();
+
+        return http
+            .csrf(ServerHttpSecurity.CsrfSpec::disable)
+            .cors(cors -> cors.configurationSource(corsConfigurationSource))
+            .authorizeExchange(authorizeExchange -> authorizeExchange
+                .pathMatchers(Auth.PATTERN)
+                .permitAll()
+                .anyExchange()
+                .authenticated())
+            .exceptionHandling(exceptionHandling -> exceptionHandling
+                .authenticationEntryPoint(authenticationEntryPoint))
+            .addFilterAt(authenticationWebFilter, SecurityWebFiltersOrder.AUTHENTICATION)
             .build();
     }
 
+    private AuthenticationWebFilter buildAuthenticationWebFilter(
+        ReactiveJwtAuthenticationManager authenticationManager,
+        ReactiveJwtAuthenticationConverter authenticationConverter,
+        ReactiveAuthenticationEntryPoint authenticationEntryPoint) {
+        AuthenticationWebFilter filter = new AuthenticationWebFilter(authenticationManager);
+
+        filter.setServerAuthenticationConverter(authenticationConverter);
+        filter.setAuthenticationFailureHandler(
+            new ServerAuthenticationEntryPointFailureHandler(authenticationEntryPoint));
+
+        return filter;
+    }
+
     @Bean
-    public CorsConfigurationSource corsConfigurationSource() {
+    public CorsConfigurationSource buildCorsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
         configuration.setAllowedOriginPatterns(Cors.ALL_ALLOWED);
         configuration.setAllowedMethods(Cors.ALLOWED_METHODS);
