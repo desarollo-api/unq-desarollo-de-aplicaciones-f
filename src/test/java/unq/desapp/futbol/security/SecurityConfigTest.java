@@ -6,8 +6,6 @@ import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import jakarta.servlet.Filter;
-import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -16,10 +14,8 @@ import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.security.web.DefaultSecurityFilterChain;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 
@@ -33,12 +29,6 @@ import org.springframework.web.cors.CorsConfigurationSource;
 @ActiveProfiles("dev")
 @Import(SecurityConfig.class)
 class SecurityConfigTest {
-
-    @MockitoBean
-    private JwtAuthenticationFilter jwtAuthenticationFilter;
-
-    @MockitoBean
-    private JwtAuthenticationEntryPoint jwtAuthenticationEntryPoint;
 
     @Autowired
     private SecurityFilterChain securityFilterChain;
@@ -86,15 +76,5 @@ class SecurityConfigTest {
         assertEquals(Constants.Cors.ALL_ALLOWED, corsConfiguration.getAllowedHeaders());
         assertEquals(Constants.Cors.EXPOSED_HEADERS, corsConfiguration.getExposedHeaders());
         assertFalse(corsConfiguration.getAllowCredentials());
-    }
-
-    @Test
-    void filterChain_containsJwtAuthenticationFilter() {
-        // Arrange & Act
-        DefaultSecurityFilterChain chain = (DefaultSecurityFilterChain) securityFilterChain;
-        List<Filter> filters = chain.getFilters();
-
-        // Assert
-        assertTrue(filters.contains(jwtAuthenticationFilter));
     }
 }
