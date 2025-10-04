@@ -1,4 +1,4 @@
-package unq.desapp.futbol.security;
+package unq.desapp.futbol.constants;
 
 import java.util.List;
 import lombok.AccessLevel;
