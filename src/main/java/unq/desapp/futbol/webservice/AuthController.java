@@ -1,40 +1,54 @@
 package unq.desapp.futbol.webservice;
 
-import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.ReactiveAuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import reactor.core.publisher.Mono;
+import unq.desapp.futbol.constants.AuthenticationManager;
 import unq.desapp.futbol.model.AuthRequest;
 import unq.desapp.futbol.model.AuthResponse;
 import unq.desapp.futbol.security.JwtTokenProvider;
 
 @RestController
 @RequestMapping("/auth")
-@RequiredArgsConstructor
 public class AuthController {
     private static final String BEARER = "Bearer";
 
-    private final AuthenticationManager authenticationManager;
+    private final ReactiveAuthenticationManager authenticationManager;
     private final JwtTokenProvider jwtTokenProvider;
 
+    public AuthController(
+        @Qualifier(AuthenticationManager.USER_PASSWORD)
+        ReactiveAuthenticationManager authenticationManager,
+        JwtTokenProvider jwtTokenProvider
+    ) {
+        this.authenticationManager = authenticationManager;
+        this.jwtTokenProvider = jwtTokenProvider;
+    }
+
     @PostMapping("/login")
-    public ResponseEntity<AuthResponse> login(@RequestBody AuthRequest request) {
-        Authentication authentication = authenticationManager.authenticate(
-            new UsernamePasswordAuthenticationToken(request.getEmail(), request.getPassword())
-        );
+    public Mono<ResponseEntity<AuthResponse>> login(@RequestBody AuthRequest request) {
+        UsernamePasswordAuthenticationToken authentication =
+            new UsernamePasswordAuthenticationToken(
+                request.getEmail(),
+                request.getPassword());
 
-        SecurityContextHolder.getContext().setAuthentication(authentication);
+        return authenticationManager
+            .authenticate(authentication)
+            .map(this::buildResponse)
+            .map(ResponseEntity::ok);
+    }
 
+    private AuthResponse buildResponse(Authentication authentication) {
         String token = jwtTokenProvider.generateToken(authentication);
         long expiresIn = jwtTokenProvider.getExpirationTime();
-        AuthResponse response = new AuthResponse(token, BEARER, expiresIn);
 
-        return ResponseEntity.ok(response);
+        return new AuthResponse(token, BEARER, expiresIn);
     }
 }

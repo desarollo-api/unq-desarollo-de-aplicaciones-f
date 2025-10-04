@@ -12,12 +12,12 @@ A Spring Boot backend that exposes a football (soccer) API with JWT-based authen
 
 - Java 17
 - Spring Boot 3.5.5
-  - Spring Web + Spring WebFlux
-  - Spring Security (JWT)
+  - Spring WebFlux (Reactive)
+  - Spring Security Reactive (JWT)
 - JSON Web Token (jjwt 0.12.3)
 - Lombok
 - Jsoup (HTML parsing/scraping)
-- springdoc-openapi (Swagger UI)
+- springdoc-openapi WebFlux (Swagger UI)
 - Gradle (Wrapper included)
 - JUnit 5 + JaCoCo
 - GitHub Actions CI
@@ -26,15 +26,22 @@ A Spring Boot backend that exposes a football (soccer) API with JWT-based authen
 
 - Package root: `unq.desapp.futbol`
 - Entry point: `FutbolProjectApplication` with OpenAPI definition.
+- **Fully reactive architecture** built with Spring WebFlux
 - Security:
-  - Stateless, JWT-based auth. All requests require authentication except those under `/auth/**`.
-  - CORS enabled for all origins and standard HTTP methods.
-  - Two in-memory demo users are provided by `CustomUserDetailsService`:
+  - Reactive, stateless JWT-based authentication using Spring Security WebFlux
+  - All requests require authentication except those under `/auth/**`
+  - CORS enabled for all origins and standard HTTP methods
+  - Two in-memory demo users are provided by `CustomReactiveUserDetailsService`:
     - `user@example.com` / `password`
     - `admin@example.com` / `adminpass`
+  - Authentication components:
+    - `ReactiveJwtAuthenticationManager`: Validates JWT tokens reactively
+    - `ReactiveUserPasswordAuthenticationManager`: Authenticates username/password for login
+    - `ReactiveJwtAuthenticationConverter`: Extracts JWT from request headers
+    - `ReactiveAuthenticationEntryPoint`: Handles authentication errors
 - Configuration (`src/main/resources/application.properties`):
   - `spring.application.name=futbol-project`
-  - `football.api.baseurl` and `football.api.token` are available for future HTTP API calls.
+  - `football.api.baseurl` and `football.api.token` are available for future HTTP API calls
   - JWT settings are externalizable via env vars with defaults:
     - `JWT_SECRET_KEY` (base64-encoded HMAC key)
     - `JWT_EXPIRATION` (milliseconds; default 604800000 = 7 days)
@@ -78,8 +85,11 @@ A Spring Boot backend that exposes a football (soccer) API with JWT-based authen
 
 ### Notes
 
-- The scraping implementation (`ScrapingServiceImpl`) parses WhoScored pages and extracts player data from embedded scripts. It runs on a bounded elastic scheduler and returns a `Mono<List<Player>>`.
-- The `FootballDataServiceImpl` currently delegates to scraping. A `WebClient` is initialized with `football.api.baseurl` and `football.api.token` for future use.
+- The entire application is built using reactive programming with Spring WebFlux
+- All endpoints return reactive types (`Mono<ResponseEntity<>>`) for non-blocking I/O
+- The scraping implementation (`ScrapingServiceImpl`) parses WhoScored pages and extracts player data from embedded scripts. It runs on a bounded elastic scheduler and returns a `Mono<List<Player>>`
+- The `FootballDataServiceImpl` currently delegates to scraping. A reactive `WebClient` is initialized with `football.api.baseurl` and `football.api.token` for future use
+- Security is fully reactive using Spring Security WebFlux filters and managers
 
 ### OpenAPI / Swagger
 
