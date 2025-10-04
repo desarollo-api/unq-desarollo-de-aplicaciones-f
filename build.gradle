@@ -45,6 +45,12 @@ tasks.named('test') {
 	useJUnitPlatform()
 }
 
+def coverageExcludes = [
+	'unq/desapp/futbol/FutbolProjectApplication.class',
+	'unq/desapp/futbol/security/SecurityConfig*.class',
+	'unq/desapp/futbol/constants/**'
+]
+
 jacoco {
 	toolVersion = "0.8.8"
 }
@@ -55,13 +61,9 @@ jacocoTestReport {
 		xml.required = true
 		html.required = true
 	}
-	afterEvaluate {
-		classDirectories.setFrom(files(classDirectories.files.collect {
-			fileTree(dir: it, exclude: [
-				'**/FutbolProjectApplication.class'
-			])
-		}))
-	}
+	classDirectories.setFrom(sourceSets.main.output.asFileTree.matching {
+		exclude coverageExcludes
+	})
 }
 
 jacocoTestCoverageVerification {
@@ -72,13 +74,7 @@ jacocoTestCoverageVerification {
 			}
 		}
 	}
-	afterEvaluate {
-		classDirectories.setFrom(files(classDirectories.files.collect {
-			fileTree(dir: it, exclude: [
-				'**/FutbolProjectApplication.class',
-				'**/SecurityConfig.class',
-				'**/constants/**'
-			])
-		}))
-	}
+	classDirectories.setFrom(sourceSets.main.output.asFileTree.matching {
+		exclude coverageExcludes
+	})
 }
