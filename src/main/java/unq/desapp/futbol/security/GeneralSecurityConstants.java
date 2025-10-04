@@ -7,7 +7,7 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
-final class Constants {
+final class GeneralSecurityConstants {
     @NoArgsConstructor(access = AccessLevel.PRIVATE)
     final class Auth {
         static final String PATTERN = "/auth/**";

@@ -8,7 +8,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 import org.springframework.web.server.ServerWebExchange;
 import reactor.core.publisher.Mono;
-import unq.desapp.futbol.security.Constants.Jwt;
+import unq.desapp.futbol.security.GeneralSecurityConstants.Jwt;
 
 @Component
 public class ReactiveJwtAuthenticationConverter implements ServerAuthenticationConverter {
