@@ -1,7 +1,6 @@
 package unq.desapp.futbol.webservice;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -11,16 +10,14 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Mockito;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.BadCredentialsException;
-import org.springframework.security.authentication.ReactiveAuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.ReactiveSecurityContextHolder;
-import org.springframework.security.core.context.SecurityContext;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 import unq.desapp.futbol.model.AuthRequest;
 import unq.desapp.futbol.model.AuthResponse;
 import unq.desapp.futbol.security.JwtTokenProvider;
+import unq.desapp.futbol.security.ReactiveUserPasswordAuthenticationManager;
 
 class AuthControllerTest {
 
@@ -34,7 +31,7 @@ class AuthControllerTest {
         Authentication authentication = Mockito.mock(Authentication.class);
         when(authentication.getName()).thenReturn(email);
 
-        ReactiveAuthenticationManager authenticationManager = Mockito.mock(ReactiveAuthenticationManager.class);
+        ReactiveUserPasswordAuthenticationManager authenticationManager = Mockito.mock(ReactiveUserPasswordAuthenticationManager.class);
         when(authenticationManager.authenticate(any(Authentication.class)))
             .thenReturn(Mono.just(authentication));
 
@@ -80,7 +77,7 @@ class AuthControllerTest {
         String password = "bad";
         AuthRequest request = new AuthRequest(email, password);
 
-        ReactiveAuthenticationManager authenticationManager = Mockito.mock(ReactiveAuthenticationManager.class);
+        ReactiveUserPasswordAuthenticationManager authenticationManager = Mockito.mock(ReactiveUserPasswordAuthenticationManager.class);
         when(authenticationManager.authenticate(any(Authentication.class)))
             .thenReturn(Mono.error(new BadCredentialsException("Invalid credentials")));
 
