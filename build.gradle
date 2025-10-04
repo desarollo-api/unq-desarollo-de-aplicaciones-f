@@ -75,7 +75,8 @@ jacocoTestCoverageVerification {
 	afterEvaluate {
 		classDirectories.setFrom(files(classDirectories.files.collect {
 			fileTree(dir: it, exclude: [
-				'**/FutbolProjectApplication.class'
+				'**/FutbolProjectApplication.class',
+				'constants/**'
 			])
 		}))
 	}
