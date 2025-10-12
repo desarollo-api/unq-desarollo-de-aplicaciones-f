@@ -18,7 +18,7 @@ import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.reactive.CorsConfigurationSource;
 import org.springframework.web.cors.reactive.UrlBasedCorsConfigurationSource;
 import unq.desapp.futbol.constants.AuthenticationManager;
-import unq.desapp.futbol.constants.GeneralSecurityConstants.Auth;
+import unq.desapp.futbol.constants.PathPattern;
 import unq.desapp.futbol.constants.GeneralSecurityConstants.Cors;
 
 @Configuration
@@ -50,7 +50,7 @@ public class SecurityConfig {
             .csrf(ServerHttpSecurity.CsrfSpec::disable)
             .cors(cors -> cors.configurationSource(corsConfigurationSource))
             .authorizeExchange(authorizeExchange -> authorizeExchange
-                .pathMatchers(Auth.PATTERN)
+                .pathMatchers(PathPattern.AUTH, PathPattern.ACTUATOR)
                 .permitAll()
                 .anyExchange()
                 .authenticated())
