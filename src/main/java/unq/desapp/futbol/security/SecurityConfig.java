@@ -18,8 +18,8 @@ import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.reactive.CorsConfigurationSource;
 import org.springframework.web.cors.reactive.UrlBasedCorsConfigurationSource;
 import unq.desapp.futbol.constants.AuthenticationManager;
-import unq.desapp.futbol.constants.PathPattern;
 import unq.desapp.futbol.constants.GeneralSecurityConstants.Cors;
+import unq.desapp.futbol.constants.PathPattern;
 
 @Configuration
 @EnableWebFluxSecurity
