@@ -6,8 +6,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
-
-import java.util.List;
+import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -15,12 +14,10 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.core.GrantedAuthority;
-import org.springframework.security.core.userdetails.ReactiveUserDetailsService;
-import org.springframework.security.core.userdetails.User;
-import org.springframework.security.core.userdetails.UserDetails;
-import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
+import unq.desapp.futbol.model.Role;
+import unq.desapp.futbol.model.User;
+import unq.desapp.futbol.service.FootballService;
 
 @ExtendWith(MockitoExtension.class)
 class ReactiveJwtAuthenticationManagerTest {
@@ -32,50 +29,39 @@ class ReactiveJwtAuthenticationManagerTest {
     private JwtTokenProvider jwtTokenProvider;
 
     @Mock
-    private ReactiveUserDetailsService userDetailsService;
+    private FootballService footballService;
 
     private ReactiveJwtAuthenticationManager authenticationManager;
 
     @BeforeEach
     void setUp() {
-        authenticationManager = new ReactiveJwtAuthenticationManager(jwtTokenProvider, userDetailsService);
+        authenticationManager = new ReactiveJwtAuthenticationManager(jwtTokenProvider, footballService);
     }
 
     @Test
     void shouldReturnAuthentication_whenTokenIsValid() {
         // Arrange - token valid and user exists
-        UserDetails userDetails = User.withUsername(USERNAME)
-                .password("password")
-                .authorities("ROLE_USER")
-                .build();
+        User user = new User(USERNAME, "password", "Some", "User", Role.USER);
 
         when(jwtTokenProvider.validateToken(TOKEN)).thenReturn(true);
         when(jwtTokenProvider.getUsernameFromToken(TOKEN)).thenReturn(USERNAME);
-        when(userDetailsService.findByUsername(USERNAME)).thenReturn(Mono.just(userDetails));
+        when(footballService.findByEmail(USERNAME)).thenReturn(Optional.of(user));
 
         Authentication inputAuthentication = new UsernamePasswordAuthenticationToken(null, TOKEN);
 
         // Act & Assert - expect authentication with same user and authorities
         StepVerifier.create(authenticationManager.authenticate(inputAuthentication))
                 .expectNextMatches(authentication -> {
-                    assertThat(authentication).isInstanceOf(UsernamePasswordAuthenticationToken.class);
-                    assertThat(authentication.getPrincipal()).isEqualTo(userDetails);
-                    assertThat(authentication.getCredentials()).isNull();
-                    List<String> actualAuthorities = authentication.getAuthorities().stream()
-                            .map(GrantedAuthority::getAuthority)
-                            .toList();
-                    List<String> expectedAuthorities = userDetails.getAuthorities().stream()
-                            .map(GrantedAuthority::getAuthority)
-                            .toList();
-                    assertThat(actualAuthorities)
-                            .containsExactlyInAnyOrderElementsOf(expectedAuthorities);
+                    assertThat(authentication.getPrincipal()).isEqualTo(user);
+                    assertThat(authentication.getAuthorities()).hasSize(1);
+                    assertThat(authentication.getAuthorities().iterator().next().getAuthority()).isEqualTo("ROLE_USER");
                     return true;
                 })
                 .verifyComplete();
 
         verify(jwtTokenProvider).validateToken(TOKEN);
         verify(jwtTokenProvider).getUsernameFromToken(TOKEN);
-        verify(userDetailsService).findByUsername(USERNAME);
+        verify(footballService).findByEmail(USERNAME);
     }
 
     @Test
@@ -91,7 +77,7 @@ class ReactiveJwtAuthenticationManagerTest {
 
         verify(jwtTokenProvider).validateToken(TOKEN);
         verify(jwtTokenProvider, never()).getUsernameFromToken(anyString());
-        verifyNoInteractions(userDetailsService);
+        verifyNoInteractions(footballService);
     }
 
     @Test
@@ -99,7 +85,7 @@ class ReactiveJwtAuthenticationManagerTest {
         // Arrange - valid token but user lookup empty
         when(jwtTokenProvider.validateToken(TOKEN)).thenReturn(true);
         when(jwtTokenProvider.getUsernameFromToken(TOKEN)).thenReturn(USERNAME);
-        when(userDetailsService.findByUsername(USERNAME)).thenReturn(Mono.empty());
+        when(footballService.findByEmail(USERNAME)).thenReturn(Optional.empty());
 
         Authentication inputAuthentication = new UsernamePasswordAuthenticationToken(null, TOKEN);
 
@@ -109,6 +95,6 @@ class ReactiveJwtAuthenticationManagerTest {
 
         verify(jwtTokenProvider).validateToken(TOKEN);
         verify(jwtTokenProvider).getUsernameFromToken(TOKEN);
-        verify(userDetailsService).findByUsername(USERNAME);
+        verify(footballService).findByEmail(USERNAME);
     }
 }
