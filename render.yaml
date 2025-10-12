@@ -1,0 +1,12 @@
+services:
+  - type: web
+    name: futbol-api
+    # Runtime environment. We'll use Docker.
+    env: docker
+    # Branch that will be automatically deployed
+    branch: main # or your primary branch (e.g., master)
+    # Enable auto-deploy on push to the specified branch
+    autoDeploy: true
+    # Health Check configuration for Render to know if the app is healthy
+    healthCheck:
+      path: /actuator/health # This requires adding the Spring Boot Actuator dependency
