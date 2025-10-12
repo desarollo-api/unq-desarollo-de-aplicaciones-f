@@ -8,7 +8,7 @@ import java.util.Date;
 import javax.crypto.SecretKey;
 import lombok.Getter;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.security.core.Authentication;
+import unq.desapp.futbol.model.User;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -24,8 +24,8 @@ public class JwtTokenProvider {
         this.key = Keys.hmacShaKeyFor(Decoders.BASE64.decode(secretKey));
     }
 
-    public String generateToken(Authentication authentication) {
-        String username = authentication.getName();
+    public String generateToken(User user) {
+        String username = user.getUsername();
         Date now = new Date();
         Date expiration = new Date(now.getTime() + expirationTime);
 
