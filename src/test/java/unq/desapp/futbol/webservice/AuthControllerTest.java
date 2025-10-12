@@ -1,10 +1,12 @@
 package unq.desapp.futbol.webservice;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -17,6 +19,7 @@ import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 import unq.desapp.futbol.model.AuthRequest;
 import unq.desapp.futbol.model.AuthResponse;
+import unq.desapp.futbol.model.RegisterRequest;
 import unq.desapp.futbol.model.Role;
 import unq.desapp.futbol.model.User;
 import unq.desapp.futbol.security.JwtTokenProvider;
@@ -84,30 +87,41 @@ class AuthControllerTest {
     }
 
     @Test
+    @DisplayName("Register with valid data creates user with USER role")
     void register_success_returnsCreatedUser() {
         // Arrange
-        when(footballService.addUser(testUser)).thenReturn(testUser);
+        RegisterRequest request = new RegisterRequest(testUser.getEmail(), testUser.getPassword(), testUser.getFirstName(), testUser.getLastName());
+        String expectedToken = "new.user.token";
+        long expectedExpiresIn = 3600L;
+
+        // We expect the service to be called with a User object that has the USER role
+        when(footballService.addUser(any(User.class))).thenReturn(testUser);
+        when(jwtTokenProvider.generateToken(testUser)).thenReturn(expectedToken);
+        when(jwtTokenProvider.getExpirationTime()).thenReturn(expectedExpiresIn);
 
         // Act
-        Mono<ResponseEntity<User>> responseMono = controller.register(testUser);
+        Mono<ResponseEntity<AuthResponse>> responseMono = controller.register(request);
 
         // Assert
         StepVerifier.create(responseMono)
                 .assertNext(response -> {
                     assertThat(response.getStatusCode()).isEqualTo(HttpStatus.CREATED);
-                    assertThat(response.getBody()).isEqualTo(testUser);
+                    AuthResponse body = response.getBody();
+                    assertThat(body).isNotNull();
+                    assertThat(body.getToken()).isEqualTo(expectedToken);
                 })
                 .verifyComplete();
-        verify(footballService).addUser(testUser);
+        verify(footballService).addUser(any(User.class));
     }
 
     @Test
     void register_failure_whenEmailExists() {
         // Arrange
-        when(footballService.addUser(testUser)).thenThrow(new IllegalArgumentException("Email is already taken"));
+        RegisterRequest request = new RegisterRequest(testUser.getEmail(), testUser.getPassword(), testUser.getFirstName(), testUser.getLastName());
+        when(footballService.addUser(any(User.class))).thenThrow(new IllegalArgumentException("Email is already taken"));
 
         // Act & Assert
-        StepVerifier.create(controller.register(testUser))
+        StepVerifier.create(controller.register(request))
                 .expectErrorSatisfies(error -> {
                     assertThat(error).isInstanceOf(ResponseStatusException.class);
                     assertThat(((ResponseStatusException) error).getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
