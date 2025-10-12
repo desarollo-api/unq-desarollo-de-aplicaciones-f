@@ -24,6 +24,13 @@ public class FootballService {
                 "User",
                 Role.USER
         ));
+        users.add(new User(
+                "admin@example.com",
+                this.passwordEncoder.encode("adminpass"),
+                "Jane",
+                "Admin",
+                Role.ADMIN
+        ));
     }
 
     public List<User> getAllUsers() {
