@@ -3,6 +3,7 @@ package unq.desapp.futbol.webservice;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Mono;
+import unq.desapp.futbol.model.Match;
 import unq.desapp.futbol.model.Player;
 import unq.desapp.futbol.service.FootballDataService;
 
@@ -22,6 +23,14 @@ public class TeamController {
     public Mono<ResponseEntity<List<Player>>> getSquadFromScraping(@PathVariable String country, @PathVariable String name) {
         String teamName = name.replace('-', ' ');
         return footballDataService.getTeamSquad(teamName, country)
+                .map(ResponseEntity::ok)
+                .defaultIfEmpty(ResponseEntity.notFound().build());
+    }
+
+    @GetMapping("/{country}/{name}/matches")
+    public Mono<ResponseEntity<List<Match>>> getUpcomingMatches(@PathVariable String country, @PathVariable String name) {
+        String teamName = name.replace('-', ' ');
+        return footballDataService.getUpcomingMatches(teamName, country)
                 .map(ResponseEntity::ok)
                 .defaultIfEmpty(ResponseEntity.notFound().build());
     }
