@@ -23,6 +23,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
+import unq.desapp.futbol.model.Match;
 import unq.desapp.futbol.model.Player;
 import unq.desapp.futbol.service.FootballDataService;
 
@@ -407,5 +408,66 @@ class TeamControllerTest {
             squad.add(createPlayer("Player " + i, 20 + i % 15, "Country " + i, "Position " + (i % 4)));
         }
         return squad;
+    }
+
+    @Nested
+    @DisplayName("getUpcomingMatches Tests")
+    class UpcomingMatchesTests {
+
+        @Test
+        @DisplayName("should return OK with matches when team is found")
+        void shouldReturnOkWithMatchesWhenTeamFound() {
+            // Arrange
+            String country = "England";
+            String teamNameWithHyphens = "manchester-united";
+            String expectedTeamName = "manchester united";
+
+            List<Match> expectedMatches = Arrays.asList(
+                new Match("2025-10-18", "Premier League", "Manchester United", "Chelsea", "vs"),
+                new Match("2025-10-25", "Premier League", "Arsenal", "Manchester United", "vs")
+            );
+
+            when(footballDataService.getUpcomingMatches(expectedTeamName, country))
+                .thenReturn(Mono.just(expectedMatches));
+
+            // Act
+            Mono<ResponseEntity<List<Match>>> result =
+                teamController.getUpcomingMatches(country, teamNameWithHyphens);
+
+            // Assert
+            StepVerifier.create(result)
+                .assertNext(response -> {
+                    assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+                    assertThat(response.getBody()).isNotNull();
+                    assertThat(response.getBody()).hasSize(2);
+                    assertThat(response.getBody().get(0).getHomeTeam()).isEqualTo("Manchester United");
+                })
+                .verifyComplete();
+
+            verify(footballDataService).getUpcomingMatches(expectedTeamName, country);
+        }
+
+        @Test
+        @DisplayName("should return NOT_FOUND when service returns empty Mono for matches")
+        void shouldReturnNotFoundWhenServiceReturnsEmptyMonoForMatches() {
+            // Arrange
+            String country = "Germany";
+            String teamName = "bayern-munich";
+
+            when(footballDataService.getUpcomingMatches(anyString(), anyString()))
+                .thenReturn(Mono.empty());
+
+            // Act
+            Mono<ResponseEntity<List<Match>>> result =
+                teamController.getUpcomingMatches(country, teamName);
+
+            // Assert
+            StepVerifier.create(result)
+                .assertNext(response -> {
+                    assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
+                    assertThat(response.getBody()).isNull();
+                })
+                .verifyComplete();
+        }
     }
 }
