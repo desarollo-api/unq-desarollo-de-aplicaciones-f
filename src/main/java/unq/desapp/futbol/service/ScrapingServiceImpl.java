@@ -11,6 +11,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
+import unq.desapp.futbol.model.Match;
 import unq.desapp.futbol.model.Player;
 import java.io.IOException;
 import java.net.URLEncoder;
@@ -156,4 +157,97 @@ public class ScrapingServiceImpl implements ScrapingService {
         }
     }
 
+    @Override
+    public Mono<List<Match>> getUpcomingMatches(String teamName, String country) {
+        return Mono.fromCallable(() -> findAndScrapeMatches(teamName, country))
+                .subscribeOn(Schedulers.boundedElastic())
+                .onErrorResume(e -> {
+                    logger.error("Error scraping upcoming matches for team: {} in country: {}", teamName, country, e);
+                    return Mono.empty();
+                });
+    }
+
+    private List<Match> findAndScrapeMatches(String teamName, String country) throws IOException {
+        logger.info("Finding team page for team: '{}' in country '{}' to get upcoming matches", teamName, country);
+        String searchUrl = String.format(SEARCH_URL_TEMPLATE, URLEncoder.encode(teamName, StandardCharsets.UTF_8.name()));
+        Document searchPage = Jsoup.connect(searchUrl).userAgent(USER_AGENT).get();
+        Elements teamRows = searchPage.select(".search-result table tr");
+
+        for (Element row : teamRows) {
+            Elements cells = row.select("td");
+            if (cells.size() == 2) {
+                String rowCountry = cells.get(1).text();
+                if (country.equalsIgnoreCase(rowCountry)) {
+                    Element link = cells.get(0).selectFirst("a");
+                    if (link != null) {
+                        String teamProfileUrl = WHOSCORED_BASE_URL + link.attr("href").replace("Show", "Fixtures");
+                        logger.info("Found team fixtures URL: {}", teamProfileUrl);
+                        return scrapeMatchesFromPage(teamProfileUrl);
+                    }
+                }
+            }
+        }
+
+        logger.warn("Could not find team '{}' from '{}' on whoscored.com to get matches", teamName, country);
+        return Collections.emptyList();
+    }
+
+    private List<Match> scrapeMatchesFromPage(String fixturesPageUrl) throws IOException {
+        logger.info("Scraping matches from URL: {}", fixturesPageUrl);
+        Document fixturesPage = Jsoup.connect(fixturesPageUrl).userAgent(USER_AGENT).get();
+
+        Elements scripts = fixturesPage.getElementsByTag("script");
+        String scriptContent = scripts.stream()
+                .map(Element::data)
+                .filter(s -> s.contains("var initialMatches"))
+                .findFirst()
+                .orElse(null);
+
+        if (scriptContent == null) {
+            logger.warn("Could not find matches data script on page: {}", fixturesPageUrl);
+            return Collections.emptyList();
+        }
+
+        Pattern pattern = Pattern.compile("var initialMatches\\s+=\\s+(\\[.*\\]);", Pattern.DOTALL);
+        Matcher matcher = pattern.matcher(scriptContent);
+
+        if (!matcher.find()) {
+            logger.warn("Could not match matches data regex on page: {}", fixturesPageUrl);
+            return Collections.emptyList();
+        }
+
+        String matchesJson = matcher.group(1);
+        List<List<Object>> rawMatches = objectMapper.readValue(matchesJson, new TypeReference<>() {});
+
+        List<Match> upcomingMatches = new ArrayList<>();
+        for (List<Object> rawMatch : rawMatches) {
+            Match match = parseMatchFromRawData(rawMatch);
+            if (match != null && "vs".equals(match.getResult())) { // "vs" indicates a future match
+                upcomingMatches.add(match);
+            }
+        }
+        logger.info("Successfully scraped {} upcoming matches.", upcomingMatches.size());
+        return upcomingMatches;
+    }
+
+    private Match parseMatchFromRawData(List<Object> rawData) {
+        // Based on analysis of the 'initialMatches' JavaScript array
+        // Indices: 2: date, 5: competition, 6: homeTeam, 7: awayTeam, 8: result
+        try {
+            if (rawData.size() < 9) {
+                logger.warn("Skipping malformed match data row (not enough elements): {}", rawData);
+                return null;
+            }
+            String date = rawData.get(2).toString();
+            String competition = rawData.get(5).toString();
+            String homeTeam = rawData.get(6).toString();
+            String awayTeam = rawData.get(7).toString();
+            String result = rawData.get(8).toString();
+
+            return new Match(date, competition, homeTeam, awayTeam, result);
+        } catch (ClassCastException | IndexOutOfBoundsException e) {
+            logger.warn("Skipping malformed match data row due to unexpected format: {}", rawData, e);
+            return null;
+        }
+    }
 }
