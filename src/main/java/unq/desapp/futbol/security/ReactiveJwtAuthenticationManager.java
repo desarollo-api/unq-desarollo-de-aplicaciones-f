@@ -1,23 +1,27 @@
 package unq.desapp.futbol.security;
 
-import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Primary;
 import org.springframework.security.authentication.ReactiveAuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.core.userdetails.ReactiveUserDetailsService;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Mono;
 import unq.desapp.futbol.constants.AuthenticationManager;
+import unq.desapp.futbol.service.UserService;
 
 @Component
 @Qualifier(AuthenticationManager.JWT)
 @Primary
-@RequiredArgsConstructor
 public class ReactiveJwtAuthenticationManager implements ReactiveAuthenticationManager {
     private final JwtTokenProvider jwtTokenProvider;
-    private final ReactiveUserDetailsService userDetailsService;
+    private final UserService footballService;
+
+    public ReactiveJwtAuthenticationManager(JwtTokenProvider jwtTokenProvider, UserService footballService) {
+        this.jwtTokenProvider = jwtTokenProvider;
+        this.footballService = footballService;
+    }
 
     @Override
     public Mono<Authentication> authenticate(Authentication authentication) {
@@ -29,7 +33,8 @@ public class ReactiveJwtAuthenticationManager implements ReactiveAuthenticationM
 
         String username = jwtTokenProvider.getUsernameFromToken(token);
 
-        return userDetailsService.findByUsername(username)
+        return Mono.justOrEmpty(footballService.findByEmail(username))
+                .map(UserDetails.class::cast)
                 .map(userDetails -> new UsernamePasswordAuthenticationToken(
                         userDetails,
                         null,
