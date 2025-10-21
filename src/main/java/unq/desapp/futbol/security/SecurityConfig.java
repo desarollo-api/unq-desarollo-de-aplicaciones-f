@@ -50,7 +50,10 @@ public class SecurityConfig {
             .csrf(ServerHttpSecurity.CsrfSpec::disable)
             .cors(cors -> cors.configurationSource(corsConfigurationSource))
             .authorizeExchange(authorizeExchange -> authorizeExchange
-                .pathMatchers(Auth.PATTERN)
+                .pathMatchers(Auth.PATTERN, "/swagger-ui.html",
+                    "/swagger-ui/**",
+                    "/v3/api-docs/**",
+                    "/webjars/**")
                 .permitAll()
                 .anyExchange()
                 .authenticated())
