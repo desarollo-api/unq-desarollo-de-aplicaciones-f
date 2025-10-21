@@ -13,7 +13,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import reactor.core.publisher.Mono;
-import unq.desapp.futbol.model.Player;
+import unq.desapp.futbol.model.PlayerPerformance;
 import unq.desapp.futbol.service.FootballDataService;
 
 @RestController
@@ -34,15 +34,19 @@ public class PlayerController {
     )
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Successfully retrieved player data",
-                    content = @Content(mediaType = "application/json", schema = @Schema(implementation = Player.class))),
+                    content = @Content(mediaType = "application/json", schema = @Schema(implementation = PlayerPerformance.class))),
             @ApiResponse(responseCode = "401", description = "Unauthorized - JWT token is missing or invalid", content = @Content),
             @ApiResponse(responseCode = "404", description = "Player not found", content = @Content)
     })
-    public Mono<ResponseEntity<Player>> getPlayerPerformance(
+    public Mono<ResponseEntity<PlayerPerformance>> getPlayerPerformance(
             @Parameter(description = "Player's nationality", required = true, example = "Portugal")
             @PathVariable String country,
             @Parameter(description = "Name of the player, use hyphens for spaces", required = true, example = "cristiano-ronaldo")
             @PathVariable String name) {
-        return Mono.just(ResponseEntity.notFound().build());
+
+        String playerName = name.replace('-', ' ');
+        return footballDataService.getPlayerRating(playerName, country)
+                .map(ResponseEntity::ok)
+                .defaultIfEmpty(ResponseEntity.notFound().build());
     }
 }
