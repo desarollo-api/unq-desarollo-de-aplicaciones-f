@@ -9,16 +9,16 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Mono;
 import unq.desapp.futbol.constants.AuthenticationManager;
-import unq.desapp.futbol.service.FootballService;
+import unq.desapp.futbol.service.UserService;
 
 @Component
 @Qualifier(AuthenticationManager.JWT)
 @Primary
 public class ReactiveJwtAuthenticationManager implements ReactiveAuthenticationManager {
     private final JwtTokenProvider jwtTokenProvider;
-    private final FootballService footballService;
+    private final UserService footballService;
 
-    public ReactiveJwtAuthenticationManager(JwtTokenProvider jwtTokenProvider, FootballService footballService) {
+    public ReactiveJwtAuthenticationManager(JwtTokenProvider jwtTokenProvider, UserService footballService) {
         this.jwtTokenProvider = jwtTokenProvider;
         this.footballService = footballService;
     }

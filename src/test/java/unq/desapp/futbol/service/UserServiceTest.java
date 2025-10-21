@@ -18,36 +18,30 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
-@DisplayName("FootballService Tests")
-class FootballServiceTest {
+@DisplayName("UserService Tests")
+class UserServiceTest {
 
     @Mock
     private PasswordEncoder passwordEncoder;
 
-    private FootballService footballService;
+    private UserService userService;
 
     @BeforeEach
     void setUp() {
-        // Mockeamos la codificación para los usuarios iniciales que se crean en el constructor del servicio.
-        when(passwordEncoder.encode("password")).thenReturn("encoded-password");
-        when(passwordEncoder.encode("adminpass")).thenReturn("encoded-adminpass");
-
-        // Ahora creamos la instancia del servicio con el mock.
-        footballService = new FootballService(passwordEncoder);
+        userService = new UserService(passwordEncoder);
     }
 
     @Test
-    @DisplayName("Constructor should initialize with default users")
-    void constructor_initializesWithDefaultUsers() {
-        List<User> users = footballService.getAllUsers();
-        assertThat(users).hasSize(2);
-        assertThat(users).extracting(User::getEmail).containsExactlyInAnyOrder("user@example.com", "admin@example.com");
+    @DisplayName("Constructor should initialize with an empty user list")
+    void constructor_initializesWithEmptyList() {
+        List<User> users = userService.getAllUsers();
+        assertThat(users).isEmpty();
     }
 
     @Test
     @DisplayName("getAllUsers() should return an unmodifiable list")
-    void getAllUsers_returnsUnmodifiableList() {
-        List<User> users = footballService.getAllUsers();
+    void getAllUsers_returnsUnmodifiableList() {        
+        List<User> users = userService.getAllUsers();
         assertThatThrownBy(users::clear)
                 .isInstanceOf(UnsupportedOperationException.class);
     }
@@ -58,15 +52,20 @@ class FootballServiceTest {
         @Test
         @DisplayName("should return user when it exists (case-insensitive)")
         void findByEmail_isCaseInsensitive() {
-            Optional<User> foundUser = footballService.findByEmail("USER@EXAMPLE.COM");
+            // Arrange
+            User user = new User("user@example.com", "encoded-password", "Test", "User", Role.USER);
+            userService.addUser(user);
+
+            // Act
+            Optional<User> foundUser = userService.findByEmail("USER@EXAMPLE.COM");
             assertThat(foundUser).isPresent();
             assertThat(foundUser.get().getEmail()).isEqualTo("user@example.com");
         }
 
         @Test
         @DisplayName("should return empty when user does not exist")
-        void findByEmail_whenUserDoesNotExist_returnsEmpty() {
-            Optional<User> foundUser = footballService.findByEmail("nonexistent@example.com");
+        void findByEmail_whenUserDoesNotExist_returnsEmpty() {            
+            Optional<User> foundUser = userService.findByEmail("nonexistent@example.com");
             assertThat(foundUser).isNotPresent();
         }
     }
@@ -77,8 +76,12 @@ class FootballServiceTest {
         @Test
         @DisplayName("should return user with valid credentials")
         void loginUser_withValidCredentials_returnsUser() {
+            User user = new User("user@example.com", "password", "Test", "User", Role.USER);
+            when(passwordEncoder.encode("password")).thenReturn("encoded-password");
+            userService.addUser(user);
             when(passwordEncoder.matches("password", "encoded-password")).thenReturn(true);
-            Optional<User> loggedInUser = footballService.loginUser("user@example.com", "password");
+
+            Optional<User> loggedInUser = userService.loginUser("user@example.com", "password");
             assertThat(loggedInUser).isPresent();
             assertThat(loggedInUser.get().getEmail()).isEqualTo("user@example.com");
         }
@@ -86,8 +89,11 @@ class FootballServiceTest {
         @Test
         @DisplayName("should return empty with invalid password")
         void loginUser_withInvalidPassword_returnsEmpty() {
+            User user = new User("user@example.com", "password", "Test", "User", Role.USER);
+            when(passwordEncoder.encode("password")).thenReturn("encoded-password");
+            userService.addUser(user);
             when(passwordEncoder.matches("wrong-password", "encoded-password")).thenReturn(false);
-            Optional<User> loggedInUser = footballService.loginUser("user@example.com", "wrong-password");
+            Optional<User> loggedInUser = userService.loginUser("user@example.com", "wrong-password");
             assertThat(loggedInUser).isNotPresent();
         }
     }
@@ -101,19 +107,23 @@ class FootballServiceTest {
             User newUser = new User("new@example.com", "newpass", "New", "User", Role.USER);
             when(passwordEncoder.encode("newpass")).thenReturn("encoded-newpass");
 
-            User addedUser = footballService.addUser(newUser);
+            User addedUser = userService.addUser(newUser);
 
             assertThat(addedUser.getEmail()).isEqualTo("new@example.com");
             assertThat(addedUser.getPassword()).isEqualTo("encoded-newpass");
             verify(passwordEncoder).encode("newpass");
-            assertThat(footballService.getAllUsers()).hasSize(3);
+            assertThat(userService.getAllUsers()).hasSize(1);
         }
 
         @Test
         @DisplayName("should throw exception if email is already taken")
         void addUser_whenEmailExists_throwsException() {
+            // Arrange
             User existingUser = new User("user@example.com", "pass", "Name", "Last", Role.USER);
-            assertThatThrownBy(() -> footballService.addUser(existingUser))
+            userService.addUser(existingUser);
+
+            // Act & Assert
+            assertThatThrownBy(() -> userService.addUser(existingUser))
                     .isInstanceOf(IllegalArgumentException.class)
                     .hasMessage("Email is already taken: user@example.com");
         }

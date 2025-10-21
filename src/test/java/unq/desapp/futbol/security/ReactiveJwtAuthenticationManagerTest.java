@@ -17,7 +17,7 @@ import org.springframework.security.core.Authentication;
 import reactor.test.StepVerifier;
 import unq.desapp.futbol.model.Role;
 import unq.desapp.futbol.model.User;
-import unq.desapp.futbol.service.FootballService;
+import unq.desapp.futbol.service.UserService;
 
 @ExtendWith(MockitoExtension.class)
 class ReactiveJwtAuthenticationManagerTest {
@@ -29,7 +29,7 @@ class ReactiveJwtAuthenticationManagerTest {
     private JwtTokenProvider jwtTokenProvider;
 
     @Mock
-    private FootballService footballService;
+    private UserService footballService;
 
     private ReactiveJwtAuthenticationManager authenticationManager;
 

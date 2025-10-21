@@ -14,23 +14,23 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
 import unq.desapp.futbol.model.Role;
 import unq.desapp.futbol.model.User;
-import unq.desapp.futbol.service.FootballService;
 import reactor.core.publisher.Mono;
 import unq.desapp.futbol.model.RegisterRequest;
 import unq.desapp.futbol.model.AuthRequest;
 import unq.desapp.futbol.model.AuthResponse;
 import unq.desapp.futbol.security.JwtTokenProvider;
+import unq.desapp.futbol.service.UserService;
 
 @RestController
 @Tag(name = "Authentication")
 @RequestMapping("/auth")
 public class AuthController {
     private static final String BEARER = "Bearer";
-    private final FootballService footballService;
+    private final UserService footballService;
     private final JwtTokenProvider jwtTokenProvider;
 
     public AuthController(
-        FootballService footballService,
+        UserService footballService,
         JwtTokenProvider jwtTokenProvider
     ) {
         this.footballService = footballService;

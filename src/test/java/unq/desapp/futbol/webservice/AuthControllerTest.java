@@ -23,13 +23,13 @@ import unq.desapp.futbol.model.RegisterRequest;
 import unq.desapp.futbol.model.Role;
 import unq.desapp.futbol.model.User;
 import unq.desapp.futbol.security.JwtTokenProvider;
-import unq.desapp.futbol.service.FootballService;
+import unq.desapp.futbol.service.UserService;
 
 @ExtendWith(MockitoExtension.class)
 class AuthControllerTest {
 
     @Mock
-    private FootballService footballService;
+    private UserService footballService;
 
     @Mock
     private JwtTokenProvider jwtTokenProvider;
