@@ -1,92 +1,48 @@
 package unq.desapp.futbol.model;
 
+import lombok.Getter;
+import java.util.Comparator;
 import java.util.List;
+import java.util.stream.Collectors;
 
+@Getter
 public class PlayerPerformance {
     private String name;
-    private List<Performance> seasons;
+    private List<SeasonPerformance> seasons;
+    private SeasonPerformance averagePerformance;
 
-    public PlayerPerformance() {}
-
-    public PlayerPerformance(String name, List<Performance> seasons) {
+    public PlayerPerformance(String name, List<SeasonPerformance> seasons) {
         this.name = name;
-        this.seasons = seasons;
+        // Ordenamos las temporadas de más reciente a más antigua y tomamos las últimas 5
+        this.seasons = seasons.stream()
+                .sorted(Comparator.comparing(SeasonPerformance::season).reversed())
+                .limit(5)
+                .collect(Collectors.toList());
+        this.averagePerformance = calculateAverage(this.seasons);
     }
 
-    public String getName() {
-        return name;
-    }
-
-    public void setName(String name) {
-        this.name = name;
-    }
-
-    public List<Performance> getSeasons() {
-        return seasons;
-    }
-
-    public void setSeasons(List<Performance> seasons) {
-        this.seasons = seasons;
-    }
-
-    public static class Performance {
-        private String season;
-        private String team;
-        private String competition;
-        private int appearances;
-        private int goals;
-        private int assists;
-        private double aerialWons;
-        private double rating;
-
-        public String getSeason() {
-            return season;
+    private SeasonPerformance calculateAverage(List<SeasonPerformance> lastFiveSeasons) {
+        if (lastFiveSeasons == null || lastFiveSeasons.isEmpty()) {
+            return new SeasonPerformance("Average", "-", "-", 0, 0, 0, 0.0, 0.0);
         }
 
-        public void setSeason(String season) {
-            this.season = season;
+        double totalAppearances = 0;
+        double totalGoals = 0;
+        double totalAssists = 0;
+        double totalRating = 0;
+
+        for (SeasonPerformance season : lastFiveSeasons) {
+            totalAppearances += season.appearances();
+            totalGoals += season.goals();
+            totalAssists += season.assists();
+            totalRating += season.rating() * season.appearances(); // Ponderamos el rating por partidos jugados
         }
 
-        public String getTeam() {
-            return team;
-        }
+        int numSeasons = lastFiveSeasons.size();
+        double avgRating = (totalAppearances > 0) ? totalRating / totalAppearances : 0.0;
 
-        public void setTeam(String team) {
-            this.team = team;
-        }
-
-        public String getCompetition() {
-            return competition;
-        }
-
-        public void setCompetition(String competition) {
-            this.competition = competition;
-        }
-
-        public int getAppearances() {
-            return appearances;
-        }
-
-        public void setAppearances(int appearances) {
-            this.appearances = appearances;
-        }
-
-        public int getGoals() {
-            return goals;
-        }
-
-        public void setGoals(int goals) {
-            this.goals = goals;
-        }
-
-        public int getAssists() {
-            return assists;
-        }
-
-        public void setAssists(int assists) {
-            this.assists = assists;
-        }
-
-        // Getters y Setters para aerialWons y rating...
+        return new SeasonPerformance("Average (Last 5)", "-", "-", (int) Math.round(totalAppearances / numSeasons),
+                (int) Math.round(totalGoals / numSeasons), (int) Math.round(totalAssists / numSeasons), 0.0,
+                Math.round(avgRating * 100.0) / 100.0); // Redondeamos a 2 decimales
     }
 }

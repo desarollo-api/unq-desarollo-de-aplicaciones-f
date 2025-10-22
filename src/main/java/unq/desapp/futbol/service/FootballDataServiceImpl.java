@@ -25,7 +25,7 @@ public class FootballDataServiceImpl implements FootballDataService {
     }
 
     @Override
-    public Mono<PlayerPerformance> getPlayerRating(String playerName, String country) {
-        return scrapingService.getPlayerPerformance(playerName, country);
+    public Mono<PlayerPerformance> getPlayerPerformance(String playerName) {
+        return scrapingService.getPlayerPerformance(playerName);
     }
 }

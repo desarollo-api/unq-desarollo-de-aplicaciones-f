@@ -8,5 +8,5 @@ import java.util.List;
 
 public interface FootballDataService {
     Mono<List<Player>> getTeamSquad(String teamName, String country);
-    Mono<PlayerPerformance> getPlayerRating(String playerName, String country);
+    Mono<PlayerPerformance> getPlayerPerformance(String playerName);
 }

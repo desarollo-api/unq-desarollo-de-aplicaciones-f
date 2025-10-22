@@ -27,7 +27,7 @@ public class PlayerController {
         this.footballDataService = footballDataService;
     }
 
-    @GetMapping("/{country}/{name}")
+    @GetMapping("/{name}")
     @Operation(
             summary = "Get Player Performance",
             description = "Returns performance for a specific player."
@@ -39,13 +39,11 @@ public class PlayerController {
             @ApiResponse(responseCode = "404", description = "Player not found", content = @Content)
     })
     public Mono<ResponseEntity<PlayerPerformance>> getPlayerPerformance(
-            @Parameter(description = "Player's nationality", required = true, example = "Portugal")
-            @PathVariable String country,
             @Parameter(description = "Name of the player, use hyphens for spaces", required = true, example = "cristiano-ronaldo")
             @PathVariable String name) {
 
         String playerName = name.replace('-', ' ');
-        return footballDataService.getPlayerRating(playerName, country)
+        return footballDataService.getPlayerPerformance(playerName)
                 .map(ResponseEntity::ok)
                 .defaultIfEmpty(ResponseEntity.notFound().build());
     }

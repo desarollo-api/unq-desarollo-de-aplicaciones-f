@@ -13,8 +13,7 @@ import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
 import unq.desapp.futbol.model.Player;
 import unq.desapp.futbol.model.PlayerPerformance;
-import unq.desapp.futbol.model.PlayerPerformance.Performance;
-
+import unq.desapp.futbol.model.SeasonPerformance;
 import java.io.IOException;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
@@ -32,7 +31,6 @@ public class ScrapingServiceImpl implements ScrapingService {
     private static final String USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/108.0.0.0 Safari/537.36";
     private final ObjectMapper objectMapper = new ObjectMapper();
 
-
     @Override
     public Mono<List<Player>> getTeamSquad(String teamName, String country) {
         return Mono.fromCallable(() -> findAndScrapeSquad(teamName, country))
@@ -43,30 +41,63 @@ public class ScrapingServiceImpl implements ScrapingService {
                 });
     }
 
-    private List<Player> findAndScrapeSquad(String teamName, String country) throws IOException {
-        logger.info("Finding team page for team: '{}' in country '{}'", teamName, country);
+    private String searchTeam(String teamName, String country) throws IOException {
         String searchUrl = String.format(SEARCH_URL_TEMPLATE, URLEncoder.encode(teamName, StandardCharsets.UTF_8.name()));
-        logger.info("Search URL: {}", searchUrl);
-        Document searchPage = Jsoup.connect(searchUrl).userAgent(USER_AGENT).get();
-        Elements teamRows = searchPage.select(".search-result table tr");
+        Document searchResultPage = Jsoup.connect(searchUrl).userAgent(USER_AGENT).get();
+        Elements resultRows = searchResultPage.select(".search-result table tr");
 
-        for (Element row : teamRows) {
+        for (Element row : resultRows) {
             Elements cells = row.select("td");
-            if (cells.size() == 2) { // Asegurarse de que es una fila de datos de equipo
+            if (cells.size() == 2) {
                 String rowCountry = cells.get(1).text();
                 if (country.equalsIgnoreCase(rowCountry)) {
                     Element link = cells.get(0).selectFirst("a");
                     if (link != null) {
-                        String teamProfileUrl = WHOSCORED_BASE_URL + link.attr("href");
-                        logger.info("Found team page URL: {}", teamProfileUrl);
-                        return scrapeSquadFromPage(teamProfileUrl);
+                        String foundUrl = WHOSCORED_BASE_URL + link.attr("href");
+                        logger.info("Found matching team for '{}' in '{}' at URL: {}", teamName, country, foundUrl);
+                        return foundUrl;
                     }
                 }
             }
         }
 
-        logger.warn("Could not find team '{}' from '{}' on whoscored.com", teamName, country);
-        return null;
+        throw new IOException("Team not found for name: '" + teamName + "' and country: '" + country + "'");
+    }
+
+    @Override
+    public Mono<PlayerPerformance> getPlayerPerformance(String playerName) {
+        return Mono.fromCallable(() -> findAndScrapePlayerPerformance(playerName))
+                .subscribeOn(Schedulers.boundedElastic())
+                .onErrorResume(e -> {
+                    logger.error("Error scraping player performance for: {}", playerName, e);
+                    return Mono.empty();
+                });
+    }
+
+    private String searchPlayer(String playerName) throws IOException {
+        String searchUrl = String.format(SEARCH_URL_TEMPLATE, URLEncoder.encode(playerName, StandardCharsets.UTF_8.name()));
+        Document searchResultPage = Jsoup.connect(searchUrl).userAgent(USER_AGENT).get();
+        Element playerLink = searchResultPage.selectFirst(".search-result a[href^='/Players/']");
+
+        if (playerLink != null) {
+            String foundUrl = WHOSCORED_BASE_URL + playerLink.attr("href");
+            logger.info("Found potential player match for '{}' at URL: {}", playerName, foundUrl);
+            return foundUrl;
+        }
+
+        throw new IOException("Player not found for name: '" + playerName + "'");
+    }
+
+    private List<Player> findAndScrapeSquad(String teamName, String country) throws IOException {
+        String teamPageUrl = searchTeam(teamName, country);
+        return scrapeSquadFromPage(teamPageUrl);
+    }
+
+    private PlayerPerformance findAndScrapePlayerPerformance(String playerName) throws IOException {
+        String playerPageUrl = searchPlayer(playerName);
+        String playerHistoryUrl = playerPageUrl.replace("show", "history");
+        logger.info("Transformed to player history URL: {}", playerHistoryUrl);
+        return scrapePerformanceFromPage(playerHistoryUrl, playerName);
     }
 
     private List<Player> scrapeSquadFromPage(String teamPageUrl) throws IOException {
@@ -151,97 +182,54 @@ public class ScrapingServiceImpl implements ScrapingService {
         }
     }
 
-    @Override
-    public Mono<PlayerPerformance> getPlayerPerformance(String playerName, String country) {
-        return Mono.fromCallable(() -> findAndScrapePlayerPerformance(playerName))
-                .subscribeOn(Schedulers.boundedElastic())
-                .onErrorResume(e -> {
-                    logger.error("Error scraping player performance for: {}", playerName, e);
-                    return Mono.empty();
-                });
-    }
 
-    private PlayerPerformance findAndScrapePlayerPerformance(String playerName) throws IOException {
-        logger.info("Finding player page for: '{}'", playerName);
-        String searchUrl = String.format(SEARCH_URL_TEMPLATE, URLEncoder.encode(playerName, StandardCharsets.UTF_8.name()));
-        Document searchPage = Jsoup.connect(searchUrl).userAgent(USER_AGENT).get();
-
-        Element playerLink = searchPage.selectFirst(".search-result table a[href^='/Players/']");
-
-        if (playerLink == null) {
-            logger.warn("Could not find player '{}' on whoscored.com", playerName);
-            return null;
-        }
-
-        String playerHistoryUrl = WHOSCORED_BASE_URL + playerLink.attr("href").replace("Show", "History");
-        logger.info("Found player history page URL: {}", playerHistoryUrl);
-
-        return scrapePerformanceFromPage(playerHistoryUrl);
-    }
-
-    private PlayerPerformance scrapePerformanceFromPage(String playerHistoryUrl) throws IOException {
+    private PlayerPerformance scrapePerformanceFromPage(String playerHistoryUrl, String playerName) throws IOException {
+        logger.info("Scraping player history from URL: {}", playerHistoryUrl);
         Document playerPage = Jsoup.connect(playerHistoryUrl).userAgent(USER_AGENT).get();
 
-        String playerName = playerPage.selectFirst("h1.header-name").text();
+        // Los datos están en la tabla con id 'player-table-statistics-body'
+        Element statsTableBody = playerPage.selectFirst("#player-table-statistics-body");
 
-        String scriptContent = playerPage.getElementsByTag("script").stream()
-                .map(Element::data)
-                .filter(s -> s.contains("player-tournament-stats"))
-                .findFirst()
-                .orElse(null);
-
-        if (scriptContent == null) {
-            logger.warn("Could not find player statistics script on page: {}", playerHistoryUrl);
+        if (statsTableBody == null) {
+            logger.warn("Could not find player statistics table on page: {}", playerHistoryUrl);
             return new PlayerPerformance(playerName, Collections.emptyList());
         }
 
-        Pattern pattern = Pattern.compile("'stats':(\\[\\[.*?\\]\\])");
-        Matcher matcher = pattern.matcher(scriptContent);
+        Elements statRows = statsTableBody.select("tr");
+        List<SeasonPerformance> performances = new ArrayList<>();
 
-        if (!matcher.find()) {
-            logger.warn("Could not match player statistics regex on page: {}", playerHistoryUrl);
-            return new PlayerPerformance(playerName, Collections.emptyList());
-        }
-
-        String statsJsonArray = matcher.group(1).replaceAll("'", "\"");
-
-        List<List<Object>> rawPerformances = objectMapper.readValue(statsJsonArray, new TypeReference<List<List<Object>>>() {});
-
-        List<Performance> performances = new ArrayList<>();
-        for (List<Object> rawPerf : rawPerformances) {
-            performances.add(parsePerformanceFromRawData(rawPerf));
+        for (Element row : statRows) {
+            // La última fila es el total, la ignoramos.
+            if (row.text().contains("Total / Average")) {
+                continue;
+            }
+            SeasonPerformance performance = parsePerformanceFromTableRow(row);
+            if (performance != null) {
+                performances.add(performance);
+            }
         }
 
         return new PlayerPerformance(playerName, performances);
     }
 
-    private Performance parsePerformanceFromRawData(List<Object> rawData) {
-        Performance perf = new Performance();
+    private SeasonPerformance parsePerformanceFromTableRow(Element row) {
         try {
-            perf.setSeason(rawData.get(1).toString());
-            perf.setTeam(rawData.get(6).toString());
-            perf.setCompetition(rawData.get(3).toString());
+            Elements cells = row.select("td");
+            if (cells.size() < 14) return null; // Fila inválida
 
-            String appsStr = rawData.get(7).toString();
-            Matcher m = Pattern.compile("\\d+").matcher(appsStr);
-            if (m.find()) {
-                perf.setAppearances(Integer.parseInt(m.group()));
-            }
+            String season = cells.get(0).text();
+            String team = cells.get(1).text();
+            String competition = cells.get(4).text();
+            String appearancesText = cells.get(5).text().replaceAll("[()]", ""); // Limpia "26(2)" a "28"
+            int appearances = Pattern.compile("\\d+").matcher(appearancesText).results().mapToInt(r -> Integer.parseInt(r.group())).sum();
+            int goals = Integer.parseInt(cells.get(7).text().replace("-", "0"));
+            int assists = Integer.parseInt(cells.get(8).text().replace("-", "0"));
+            double rating = Double.parseDouble(cells.get(14).text().replace("-", "0.0"));
 
-            perf.setGoals(toInt(rawData.get(9)));
-            perf.setAssists(toInt(rawData.get(10)));
-
-        } catch (Exception e) {
-            logger.warn("Skipping malformed performance data row: {}", rawData, e);
-            return null; 
+            return new SeasonPerformance(season, team, competition, appearances, goals, assists, 0.0, rating);
+        } catch (NumberFormatException | IndexOutOfBoundsException e) {
+            logger.warn("Skipping malformed performance row due to parsing error: {}", row.text(), e);
+            return null;
         }
-        return perf;
-    }
-
-    private int toInt(Object obj) {
-        if (obj instanceof Number) {
-            return ((Number) obj).intValue();
-        }
-        return Integer.parseInt(obj.toString());
     }
 }

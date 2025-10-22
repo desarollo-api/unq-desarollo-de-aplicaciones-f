@@ -8,5 +8,5 @@ import java.util.List;
 
 public interface ScrapingService {
     Mono<List<Player>> getTeamSquad(String teamName, String country);
-    Mono<PlayerPerformance> getPlayerPerformance(String playerName, String country);
+    Mono<PlayerPerformance> getPlayerPerformance(String playerName);
 }
