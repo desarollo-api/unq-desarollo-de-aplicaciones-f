@@ -13,9 +13,8 @@ public class FootballDataServiceImpl implements FootballDataService {
     private final ScrapingService scrapingService;
 
     public FootballDataServiceImpl(ScrapingService scrapingService,
-                                   @Value("${football.api.baseurl}") String baseUrl,
-                                   @Value("${football.api.token}") String apiToken
-                                   ) {
+            @Value("${football.api.baseurl}") String baseUrl,
+            @Value("${football.api.token}") String apiToken) {
         this.scrapingService = scrapingService;
     }
 

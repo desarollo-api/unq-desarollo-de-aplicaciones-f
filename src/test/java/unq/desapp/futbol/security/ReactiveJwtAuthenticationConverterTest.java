@@ -60,10 +60,9 @@ class ReactiveJwtAuthenticationConverterTest {
                     .assertNext(authentication -> {
                         assertThat(authentication).isNotNull();
                         assertThat(authentication).isInstanceOf(UsernamePasswordAuthenticationToken.class);
-                        
-                        UsernamePasswordAuthenticationToken auth = 
-                                (UsernamePasswordAuthenticationToken) authentication;
-                        
+
+                        UsernamePasswordAuthenticationToken auth = (UsernamePasswordAuthenticationToken) authentication;
+
                         assertThat(auth.getPrincipal()).isEqualTo(token);
                         assertThat(auth.getCredentials()).isEqualTo(token);
                         assertThat(auth.getAuthorities()).isEmpty();
@@ -392,7 +391,7 @@ class ReactiveJwtAuthenticationConverterTest {
             // Arrange
             String token1 = "first.token";
             String token2 = "second.token";
-            
+
             when(headers.getFirst(HttpHeaders.AUTHORIZATION))
                     .thenReturn("Bearer " + token1)
                     .thenReturn("Bearer " + token2);
@@ -431,9 +430,8 @@ class ReactiveJwtAuthenticationConverterTest {
             // Assert
             StepVerifier.create(result)
                     .assertNext(authentication -> {
-                        UsernamePasswordAuthenticationToken auth = 
-                                (UsernamePasswordAuthenticationToken) authentication;
-                        
+                        UsernamePasswordAuthenticationToken auth = (UsernamePasswordAuthenticationToken) authentication;
+
                         assertThat(auth.isAuthenticated()).isFalse();
                         assertThat(auth.getDetails()).isNull();
                         assertThat(auth.getName()).isEqualTo(token);
@@ -454,9 +452,8 @@ class ReactiveJwtAuthenticationConverterTest {
             // Assert
             StepVerifier.create(result)
                     .assertNext(authentication -> {
-                        UsernamePasswordAuthenticationToken auth = 
-                                (UsernamePasswordAuthenticationToken) authentication;
-                        
+                        UsernamePasswordAuthenticationToken auth = (UsernamePasswordAuthenticationToken) authentication;
+
                         assertThat(auth.getPrincipal()).isEqualTo(token);
                         assertThat(auth.getCredentials()).isEqualTo(token);
                         assertThat(auth.getPrincipal()).isSameAs(auth.getCredentials());
@@ -500,10 +497,10 @@ class ReactiveJwtAuthenticationConverterTest {
             verify(exchange).getRequest();
             verify(request).getHeaders();
             verify(headers).getFirst(HttpHeaders.AUTHORIZATION);
-            
+
             // Additional subscription doesn't cause additional calls
             result.block();
-            
+
             // Still same number of calls
             verify(exchange, times(1)).getRequest();
         }
