@@ -35,8 +35,8 @@ public class User implements UserDetails {
         this.searchHistory = new ArrayList<>(); // Ensure it's always initialized
     }
 
-    public void addSearchHistory(String query) {
-        SearchHistoryEntry entry = new SearchHistoryEntry(query);
+    public void addSearchHistory(SearchType type, String query) {
+        SearchHistoryEntry entry = new SearchHistoryEntry(type, query);
         this.searchHistory.add(entry);
     }
 

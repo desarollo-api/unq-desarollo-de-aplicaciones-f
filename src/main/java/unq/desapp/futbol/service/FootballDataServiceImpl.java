@@ -4,6 +4,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Mono;
 import unq.desapp.futbol.model.Player;
+import unq.desapp.futbol.model.SearchType;
 import unq.desapp.futbol.model.User;
 import unq.desapp.futbol.model.PlayerPerformance;
 import java.util.List;
@@ -23,7 +24,7 @@ public class FootballDataServiceImpl implements FootballDataService {
         return scrapingService.getTeamSquad(teamName, country)
                 .doOnSuccess(squad -> {
                     if (squad != null && !squad.isEmpty() && user != null) {
-                        user.addSearchHistory("Team: " + teamName + " (" + country + ")");
+                        user.addSearchHistory(SearchType.TEAM, teamName + " (" + country + ")");
                     }
                 });
     }
@@ -33,7 +34,7 @@ public class FootballDataServiceImpl implements FootballDataService {
         return scrapingService.getPlayerPerformance(playerName)
                 .doOnSuccess(performance -> {
                     if (performance != null && user != null) {
-                        user.addSearchHistory("Player: " + playerName);
+                        user.addSearchHistory(SearchType.PLAYER, playerName);
                     }
                 });
     }
