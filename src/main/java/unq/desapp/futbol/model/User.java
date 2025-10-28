@@ -1,8 +1,10 @@
 package unq.desapp.futbol.model;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import lombok.AllArgsConstructor;
+import java.util.List;
+import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.springframework.security.core.GrantedAuthority;
@@ -11,7 +13,6 @@ import org.springframework.security.core.userdetails.UserDetails;
 
 @Data
 @NoArgsConstructor
-@AllArgsConstructor
 public class User implements UserDetails {
     private static final String ROLE_PREFIX = "ROLE_";
 
@@ -20,6 +21,24 @@ public class User implements UserDetails {
     private String firstName;
     private String lastName;
     private Role role;
+    private List<SearchHistoryEntry> searchHistory = new ArrayList<>(); // Initialized by Builder.Default
+
+    // Custom constructor to maintain compatibility with existing tests and
+    // AuthController.register
+    // This constructor will initialize searchHistory to an empty ArrayList
+    public User(String email, String password, String firstName, String lastName, Role role) {
+        this.email = email;
+        this.password = password;
+        this.firstName = firstName;
+        this.lastName = lastName;
+        this.role = role;
+        this.searchHistory = new ArrayList<>(); // Ensure it's always initialized
+    }
+
+    public void addSearchHistory(String query) {
+        SearchHistoryEntry entry = new SearchHistoryEntry(query);
+        this.searchHistory.add(entry);
+    }
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
