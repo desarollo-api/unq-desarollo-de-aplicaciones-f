@@ -37,8 +37,13 @@ public class UserService {
         if (findByEmail(user.getEmail()).isPresent()) {
             throw new IllegalArgumentException("Email is already taken: " + user.getEmail());
         }
-        user.setPassword(passwordEncoder.encode(user.getPassword()));
-        users.add(user);
-        return user;
+        User newUser = new User(
+                user.getEmail(),
+                passwordEncoder.encode(user.getPassword()),
+                user.getFirstName(),
+                user.getLastName(),
+                user.getRole());
+        users.add(newUser);
+        return newUser;
     }
 }
