@@ -1,6 +1,7 @@
 package unq.desapp.futbol.webservice;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.times;
@@ -25,449 +26,457 @@ import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 import unq.desapp.futbol.model.Match;
 import unq.desapp.futbol.model.Player;
+import unq.desapp.futbol.model.Role;
 import unq.desapp.futbol.service.FootballDataService;
+import unq.desapp.futbol.model.User;
 
 @ExtendWith(MockitoExtension.class)
 @DisplayName("TeamController Tests")
 class TeamControllerTest {
 
-    @Mock
-    private FootballDataService footballDataService;
+        @Mock
+        private FootballDataService footballDataService;
 
-    private TeamController teamController;
+        private TeamController teamController;
 
-    @BeforeEach
-    void setUp() {
-        teamController = new TeamController(footballDataService);
-    }
+        private User testUser;
 
-    @Nested
-    @DisplayName("getSquadFromScraping - Happy Path")
-    class HappyPath {
-
-        @Test
-        @DisplayName("should return OK with squad list when team is found")
-        void shouldReturnOkWithSquadWhenTeamFound() {
-            // Arrange
-            String country = "England";
-            String teamNameWithHyphens = "manchester-united";
-            String expectedTeamName = "manchester united";
-
-            Player player1 = createPlayer("Marcus Rashford", 26, "England", "Forward");
-            Player player2 = createPlayer("Bruno Fernandes", 29, "Portugal", "Midfielder");
-            List<Player> expectedSquad = Arrays.asList(player1, player2);
-
-            when(footballDataService.getTeamSquad(expectedTeamName, country))
-                    .thenReturn(Mono.just(expectedSquad));
-
-            // Act
-            Mono<ResponseEntity<List<Player>>> result =
-                    teamController.getSquadFromScraping(country, teamNameWithHyphens);
-
-            // Assert
-            StepVerifier.create(result)
-                    .assertNext(response -> {
-                        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
-                        assertThat(response.getBody()).isNotNull();
-                        assertThat(response.getBody()).hasSize(2);
-                        assertThat(response.getBody().get(0).getName()).isEqualTo("Marcus Rashford");
-                        assertThat(response.getBody().get(1).getName()).isEqualTo("Bruno Fernandes");
-                    })
-                    .verifyComplete();
-
-            verify(footballDataService).getTeamSquad(expectedTeamName, country);
+        @BeforeEach
+        void setUp() {
+                teamController = new TeamController(footballDataService);
+                testUser = new User("test@user.com", "pass", "Test", "User", Role.USER);
         }
 
-        @Test
-        @DisplayName("should convert hyphens to spaces in team name")
-        void shouldConvertHyphensToSpacesInTeamName() {
-            // Arrange
-            String country = "Spain";
-            String teamNameWithMultipleHyphens = "real-madrid-cf";
-            String expectedTeamName = "real madrid cf";
+        @Nested
+        @DisplayName("getSquadFromScraping - Happy Path")
+        class HappyPath {
 
-            when(footballDataService.getTeamSquad(expectedTeamName, country))
-                    .thenReturn(Mono.just(Collections.emptyList()));
+                @Test
+                @DisplayName("should return OK with squad list when team is found")
+                void shouldReturnOkWithSquadWhenTeamFound() {
+                        // Arrange
+                        String country = "England";
+                        String teamNameWithHyphens = "manchester-united";
+                        String expectedTeamName = "manchester united";
 
-            // Act
-            Mono<ResponseEntity<List<Player>>> result =
-                    teamController.getSquadFromScraping(country, teamNameWithMultipleHyphens);
+                        Player player1 = createPlayer("Marcus Rashford", 26, "England", "Forward");
+                        Player player2 = createPlayer("Bruno Fernandes", 29, "Portugal", "Midfielder");
+                        List<Player> expectedSquad = Arrays.asList(player1, player2);
 
-            // Assert
-            StepVerifier.create(result)
-                    .expectNextCount(1)
-                    .verifyComplete();
+                        when(footballDataService.getTeamSquad(expectedTeamName, country, testUser))
+                                        .thenReturn(Mono.just(expectedSquad));
 
-            verify(footballDataService).getTeamSquad(expectedTeamName, country);
+                        // Act
+                        Mono<ResponseEntity<List<Player>>> result = teamController.getSquadFromScraping(country,
+                                        teamNameWithHyphens, testUser);
+
+                        // Assert
+                        StepVerifier.create(result)
+                                        .assertNext(response -> {
+                                                assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+                                                assertThat(response.getBody()).isNotNull();
+                                                assertThat(response.getBody()).hasSize(2);
+                                                assertThat(response.getBody().get(0).getName())
+                                                                .isEqualTo("Marcus Rashford");
+                                                assertThat(response.getBody().get(1).getName())
+                                                                .isEqualTo("Bruno Fernandes");
+                                        })
+                                        .verifyComplete();
+
+                        verify(footballDataService).getTeamSquad(expectedTeamName, country, testUser);
+                }
+
+                @Test
+                @DisplayName("should convert hyphens to spaces in team name")
+                void shouldConvertHyphensToSpacesInTeamName() {
+                        // Arrange
+                        String country = "Spain";
+                        String teamNameWithMultipleHyphens = "real-madrid-cf";
+                        String expectedTeamName = "real madrid cf";
+
+                        when(footballDataService.getTeamSquad(expectedTeamName, country, testUser))
+                                        .thenReturn(Mono.just(Collections.emptyList()));
+
+                        // Act
+                        Mono<ResponseEntity<List<Player>>> result = teamController.getSquadFromScraping(country,
+                                        teamNameWithMultipleHyphens, testUser);
+
+                        // Assert
+                        StepVerifier.create(result)
+                                        .expectNextCount(1)
+                                        .verifyComplete();
+
+                        verify(footballDataService).getTeamSquad(expectedTeamName, country, testUser);
+                }
+
+                @Test
+                @DisplayName("should handle team name without hyphens")
+                void shouldHandleTeamNameWithoutHyphens() {
+                        // Arrange
+                        String country = "Italy";
+                        String teamName = "juventus";
+                        Player player = createPlayer("Dusan Vlahovic", 24, "Serbia", "Forward");
+
+                        when(footballDataService.getTeamSquad(teamName, country, testUser))
+                                        .thenReturn(Mono.just(Collections.singletonList(player)));
+
+                        // Act
+                        Mono<ResponseEntity<List<Player>>> result = teamController.getSquadFromScraping(country,
+                                        teamName, testUser);
+
+                        // Assert
+                        StepVerifier.create(result)
+                                        .assertNext(response -> {
+                                                assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+                                                assertThat(response.getBody()).hasSize(1);
+                                        })
+                                        .verifyComplete();
+
+                        verify(footballDataService).getTeamSquad(teamName, country, testUser);
+                }
+
+                @Test
+                @DisplayName("should return OK with empty list when squad has no players")
+                void shouldReturnOkWithEmptyListWhenSquadHasNoPlayers() {
+                        // Arrange
+                        String country = "France";
+                        String teamName = "psg";
+
+                        when(footballDataService.getTeamSquad(teamName, country, testUser))
+                                        .thenReturn(Mono.just(Collections.emptyList()));
+
+                        // Act
+                        Mono<ResponseEntity<List<Player>>> result = teamController.getSquadFromScraping(country,
+                                        teamName, testUser);
+
+                        // Assert
+                        StepVerifier.create(result)
+                                        .assertNext(response -> {
+                                                assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+                                                assertThat(response.getBody()).isNotNull();
+                                                assertThat(response.getBody()).isEmpty();
+                                        })
+                                        .verifyComplete();
+                }
         }
 
-        @Test
-        @DisplayName("should handle team name without hyphens")
-        void shouldHandleTeamNameWithoutHyphens() {
-            // Arrange
-            String country = "Italy";
-            String teamName = "juventus";
-            Player player = createPlayer("Dusan Vlahovic", 24, "Serbia", "Forward");
+        @Nested
+        @DisplayName("getSquadFromScraping - Error Cases")
+        class ErrorCases {
 
-            when(footballDataService.getTeamSquad(teamName, country))
-                    .thenReturn(Mono.just(Collections.singletonList(player)));
+                @Test
+                @DisplayName("should return NOT_FOUND when service returns empty Mono")
+                void shouldReturnNotFoundWhenServiceReturnsEmptyMono() {
+                        // Arrange
+                        String country = "Germany";
+                        String teamName = "bayern-munich";
 
-            // Act
-            Mono<ResponseEntity<List<Player>>> result =
-                    teamController.getSquadFromScraping(country, teamName);
+                        when(footballDataService.getTeamSquad(anyString(), anyString(), any(User.class)))
+                                        .thenReturn(Mono.empty());
 
-            // Assert
-            StepVerifier.create(result)
-                    .assertNext(response -> {
-                        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
-                        assertThat(response.getBody()).hasSize(1);
-                    })
-                    .verifyComplete();
+                        // Act
+                        Mono<ResponseEntity<List<Player>>> result = teamController.getSquadFromScraping(country,
+                                        teamName, testUser);
 
-            verify(footballDataService).getTeamSquad(teamName, country);
+                        // Assert
+                        StepVerifier.create(result)
+                                        .assertNext(response -> {
+                                                assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
+                                                assertThat(response.getBody()).isNull();
+                                        })
+                                        .verifyComplete();
+                }
+
+                @Test
+                @DisplayName("should propagate error when service throws exception")
+                void shouldPropagateErrorWhenServiceThrowsException() {
+                        // Arrange
+                        String country = "England";
+                        String teamName = "chelsea";
+                        RuntimeException expectedException = new RuntimeException("Service unavailable");
+
+                        when(footballDataService.getTeamSquad(anyString(), anyString(), any(User.class)))
+                                        .thenReturn(Mono.error(expectedException));
+
+                        // Act
+                        Mono<ResponseEntity<List<Player>>> result = teamController.getSquadFromScraping(country,
+                                        teamName, testUser);
+
+                        // Assert
+                        StepVerifier.create(result)
+                                        .expectError(RuntimeException.class)
+                                        .verify();
+                }
+
+                @Test
+                @DisplayName("should handle null team name gracefully")
+                void shouldHandleNullTeamNameGracefully() {
+                        // Arrange
+                        String country = "Spain";
+                        String teamName = null;
+
+                        // This test documents current behavior - NPE is thrown during replace()
+                        // In a production system, you might want to add @PathVariable validation
+                        // For now, we verify the current behavior and mark it as a known limitation
+
+                        // Act & Assert
+                        try {
+                                teamController.getSquadFromScraping(country, teamName, testUser);
+                                // If we get here without NPE, the behavior changed
+                                StepVerifier.create(teamController.getSquadFromScraping(country, teamName, testUser))
+                                                .expectNextCount(0)
+                                                .verifyComplete();
+                        } catch (NullPointerException e) {
+                                // Expected behavior - NPE thrown during replace operation
+                                assertThat(e).isInstanceOf(NullPointerException.class);
+                        }
+
+                        verifyNoInteractions(footballDataService);
+                }
         }
 
-        @Test
-        @DisplayName("should return OK with empty list when squad has no players")
-        void shouldReturnOkWithEmptyListWhenSquadHasNoPlayers() {
-            // Arrange
-            String country = "France";
-            String teamName = "psg";
+        @Nested
+        @DisplayName("getSquadFromScraping - Edge Cases")
+        class EdgeCases {
 
-            when(footballDataService.getTeamSquad(teamName, country))
-                    .thenReturn(Mono.just(Collections.emptyList()));
+                @Test
+                @DisplayName("should handle special characters in country name")
+                void shouldHandleSpecialCharactersInCountryName() {
+                        // Arrange
+                        String country = "Côte d'Ivoire";
+                        String teamName = "asec-mimosas";
 
-            // Act
-            Mono<ResponseEntity<List<Player>>> result =
-                    teamController.getSquadFromScraping(country, teamName);
+                        when(footballDataService.getTeamSquad(anyString(), eq(country), any(User.class)))
+                                        .thenReturn(Mono.just(Collections.emptyList()));
 
-            // Assert
-            StepVerifier.create(result)
-                    .assertNext(response -> {
-                        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
-                        assertThat(response.getBody()).isNotNull();
-                        assertThat(response.getBody()).isEmpty();
-                    })
-                    .verifyComplete();
-        }
-    }
+                        // Act
+                        Mono<ResponseEntity<List<Player>>> result = teamController.getSquadFromScraping(country,
+                                        teamName, testUser);
 
-    @Nested
-    @DisplayName("getSquadFromScraping - Error Cases")
-    class ErrorCases {
+                        // Assert
+                        StepVerifier.create(result)
+                                        .expectNextCount(1)
+                                        .verifyComplete();
 
-        @Test
-        @DisplayName("should return NOT_FOUND when service returns empty Mono")
-        void shouldReturnNotFoundWhenServiceReturnsEmptyMono() {
-            // Arrange
-            String country = "Germany";
-            String teamName = "bayern-munich";
+                        verify(footballDataService).getTeamSquad("asec mimosas", country, testUser);
+                }
 
-            when(footballDataService.getTeamSquad(anyString(), anyString()))
-                    .thenReturn(Mono.empty());
+                @Test
+                @DisplayName("should handle very long team name")
+                void shouldHandleVeryLongTeamName() {
+                        // Arrange
+                        String country = "Wales";
+                        String teamName = "llanfairpwllgwyngyllgogerychwyrndrobwllllantysiliogogogoch-fc";
+                        String expectedTeamName = teamName.replace('-', ' ');
 
-            // Act
-            Mono<ResponseEntity<List<Player>>> result =
-                    teamController.getSquadFromScraping(country, teamName);
+                        when(footballDataService.getTeamSquad(expectedTeamName, country, testUser))
+                                        .thenReturn(Mono.just(Collections.emptyList()));
 
-            // Assert
-            StepVerifier.create(result)
-                    .assertNext(response -> {
-                        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
-                        assertThat(response.getBody()).isNull();
-                    })
-                    .verifyComplete();
-        }
+                        // Act
+                        Mono<ResponseEntity<List<Player>>> result = teamController.getSquadFromScraping(country,
+                                        teamName, testUser);
 
-        @Test
-        @DisplayName("should propagate error when service throws exception")
-        void shouldPropagateErrorWhenServiceThrowsException() {
-            // Arrange
-            String country = "England";
-            String teamName = "chelsea";
-            RuntimeException expectedException = new RuntimeException("Service unavailable");
+                        // Assert
+                        StepVerifier.create(result)
+                                        .expectNextCount(1)
+                                        .verifyComplete();
+                }
 
-            when(footballDataService.getTeamSquad(anyString(), anyString()))
-                    .thenReturn(Mono.error(expectedException));
+                @Test
+                @DisplayName("should handle team name with numbers")
+                void shouldHandleTeamNameWithNumbers() {
+                        // Arrange
+                        String country = "Germany";
+                        String teamName = "1860-munich";
+                        String expectedTeamName = "1860 munich";
 
-            // Act
-            Mono<ResponseEntity<List<Player>>> result =
-                    teamController.getSquadFromScraping(country, teamName);
+                        when(footballDataService.getTeamSquad(expectedTeamName, country, testUser))
+                                        .thenReturn(Mono.just(Collections.emptyList()));
 
-            // Assert
-            StepVerifier.create(result)
-                    .expectError(RuntimeException.class)
-                    .verify();
-        }
+                        // Act
+                        Mono<ResponseEntity<List<Player>>> result = teamController.getSquadFromScraping(country,
+                                        teamName, testUser);
 
-        @Test
-        @DisplayName("should handle null team name gracefully")
-        void shouldHandleNullTeamNameGracefully() {
-            // Arrange
-            String country = "Spain";
-            String teamName = null;
+                        // Assert
+                        StepVerifier.create(result)
+                                        .expectNextCount(1)
+                                        .verifyComplete();
 
-            // This test documents current behavior - NPE is thrown during replace()
-            // In a production system, you might want to add @PathVariable validation
-            // For now, we verify the current behavior and mark it as a known limitation
+                        verify(footballDataService).getTeamSquad(expectedTeamName, country, testUser);
+                }
 
-            // Act & Assert
-            try {
-                teamController.getSquadFromScraping(country, teamName);
-                // If we get here without NPE, the behavior changed
-                StepVerifier.create(teamController.getSquadFromScraping(country, teamName))
-                        .expectNextCount(0)
-                        .verifyComplete();
-            } catch (NullPointerException e) {
-                // Expected behavior - NPE thrown during replace operation
-                assertThat(e).isInstanceOf(NullPointerException.class);
-            }
+                @Test
+                @DisplayName("should handle consecutive hyphens")
+                void shouldHandleConsecutiveHyphens() {
+                        // Arrange
+                        String country = "Brazil";
+                        String teamName = "sao--paulo";
+                        String expectedTeamName = "sao  paulo"; // Double space
 
-            verifyNoInteractions(footballDataService);
-        }
-    }
+                        when(footballDataService.getTeamSquad(expectedTeamName, country, testUser))
+                                        .thenReturn(Mono.just(Collections.emptyList()));
 
-    @Nested
-    @DisplayName("getSquadFromScraping - Edge Cases")
-    class EdgeCases {
+                        // Act
+                        Mono<ResponseEntity<List<Player>>> result = teamController.getSquadFromScraping(country,
+                                        teamName, testUser);
 
-        @Test
-        @DisplayName("should handle special characters in country name")
-        void shouldHandleSpecialCharactersInCountryName() {
-            // Arrange
-            String country = "Côte d'Ivoire";
-            String teamName = "asec-mimosas";
-
-            when(footballDataService.getTeamSquad(anyString(), eq(country)))
-                    .thenReturn(Mono.just(Collections.emptyList()));
-
-            // Act
-            Mono<ResponseEntity<List<Player>>> result =
-                    teamController.getSquadFromScraping(country, teamName);
-
-            // Assert
-            StepVerifier.create(result)
-                    .expectNextCount(1)
-                    .verifyComplete();
-
-            verify(footballDataService).getTeamSquad("asec mimosas", country);
+                        // Assert
+                        StepVerifier.create(result)
+                                        .expectNextCount(1)
+                                        .verifyComplete();
+                }
         }
 
-        @Test
-        @DisplayName("should handle very long team name")
-        void shouldHandleVeryLongTeamName() {
-            // Arrange
-            String country = "Wales";
-            String teamName = "llanfairpwllgwyngyllgogerychwyrndrobwllllantysiliogogogoch-fc";
-            String expectedTeamName = teamName.replace('-', ' ');
+        @Nested
+        @DisplayName("getSquadFromScraping - Integration Scenarios")
+        class IntegrationScenarios {
 
-            when(footballDataService.getTeamSquad(expectedTeamName, country))
-                    .thenReturn(Mono.just(Collections.emptyList()));
+                @Test
+                @DisplayName("should handle large squad with many players")
+                void shouldHandleLargeSquadWithManyPlayers() {
+                        // Arrange
+                        String country = "England";
+                        String teamName = "arsenal";
+                        List<Player> largeSquad = createLargeSquad(30);
 
-            // Act
-            Mono<ResponseEntity<List<Player>>> result =
-                    teamController.getSquadFromScraping(country, teamName);
+                        when(footballDataService.getTeamSquad(teamName, country, testUser))
+                                        .thenReturn(Mono.just(largeSquad));
 
-            // Assert
-            StepVerifier.create(result)
-                    .expectNextCount(1)
-                    .verifyComplete();
+                        // Act
+                        Mono<ResponseEntity<List<Player>>> result = teamController.getSquadFromScraping(country,
+                                        teamName, testUser);
+
+                        // Assert
+                        StepVerifier.create(result)
+                                        .assertNext(response -> {
+                                                assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+                                                assertThat(response.getBody()).hasSize(30);
+                                        })
+                                        .verifyComplete();
+                }
+
+                @Test
+                @DisplayName("should verify service is called exactly once")
+                void shouldVerifyServiceIsCalledExactlyOnce() {
+                        // Arrange
+                        String country = "Italy";
+                        String teamName = "ac-milan";
+
+                        when(footballDataService.getTeamSquad(anyString(), anyString(), any(User.class)))
+                                        .thenReturn(Mono.just(Collections.emptyList()));
+
+                        // Act
+                        teamController.getSquadFromScraping(country, teamName, testUser).block();
+
+                        // Assert
+                        verify(footballDataService, times(1)).getTeamSquad("ac milan", country, testUser);
+                        verifyNoMoreInteractions(footballDataService);
+                }
+
+                @Test
+                @DisplayName("should handle case sensitive country names")
+                void shouldHandleCaseSensitiveCountryNames() {
+                        // Arrange
+                        String countryUpperCase = "ENGLAND";
+                        String countryLowerCase = "england";
+                        String teamName = "liverpool";
+
+                        when(footballDataService.getTeamSquad(anyString(), anyString(), any(User.class)))
+                                        .thenReturn(Mono.just(Collections.emptyList()));
+
+                        // Act
+                        teamController.getSquadFromScraping(countryUpperCase, teamName, testUser).block();
+                        teamController.getSquadFromScraping(countryLowerCase, teamName, testUser).block();
+
+                        // Assert
+                        verify(footballDataService).getTeamSquad(teamName, countryUpperCase, testUser);
+                        verify(footballDataService).getTeamSquad(teamName, countryLowerCase, testUser);
+                }
         }
 
-        @Test
-        @DisplayName("should handle team name with numbers")
-        void shouldHandleTeamNameWithNumbers() {
-            // Arrange
-            String country = "Germany";
-            String teamName = "1860-munich";
-            String expectedTeamName = "1860 munich";
-
-            when(footballDataService.getTeamSquad(expectedTeamName, country))
-                    .thenReturn(Mono.just(Collections.emptyList()));
-
-            // Act
-            Mono<ResponseEntity<List<Player>>> result =
-                    teamController.getSquadFromScraping(country, teamName);
-
-            // Assert
-            StepVerifier.create(result)
-                    .expectNextCount(1)
-                    .verifyComplete();
-
-            verify(footballDataService).getTeamSquad(expectedTeamName, country);
+        // Helper methods
+        private Player createPlayer(String name, int age, String nationality, String position) {
+                Player player = new Player();
+                player.setName(name);
+                player.setAge(age);
+                player.setNationality(nationality);
+                player.setPosition(position);
+                player.setRating(7.5);
+                player.setMatches(20);
+                player.setGoals(5);
+                player.setAssist(3);
+                player.setRedCards(0);
+                player.setYellowCards(2);
+                return player;
         }
 
-        @Test
-        @DisplayName("should handle consecutive hyphens")
-        void shouldHandleConsecutiveHyphens() {
-            // Arrange
-            String country = "Brazil";
-            String teamName = "sao--paulo";
-            String expectedTeamName = "sao  paulo"; // Double space
-
-            when(footballDataService.getTeamSquad(expectedTeamName, country))
-                    .thenReturn(Mono.just(Collections.emptyList()));
-
-            // Act
-            Mono<ResponseEntity<List<Player>>> result =
-                    teamController.getSquadFromScraping(country, teamName);
-
-            // Assert
-            StepVerifier.create(result)
-                    .expectNextCount(1)
-                    .verifyComplete();
-        }
-    }
-
-    @Nested
-    @DisplayName("getSquadFromScraping - Integration Scenarios")
-    class IntegrationScenarios {
-
-        @Test
-        @DisplayName("should handle large squad with many players")
-        void shouldHandleLargeSquadWithManyPlayers() {
-            // Arrange
-            String country = "England";
-            String teamName = "arsenal";
-            List<Player> largeSquad = createLargeSquad(30);
-
-            when(footballDataService.getTeamSquad(teamName, country))
-                    .thenReturn(Mono.just(largeSquad));
-
-            // Act
-            Mono<ResponseEntity<List<Player>>> result =
-                    teamController.getSquadFromScraping(country, teamName);
-
-            // Assert
-            StepVerifier.create(result)
-                    .assertNext(response -> {
-                        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
-                        assertThat(response.getBody()).hasSize(30);
-                    })
-                    .verifyComplete();
+        private List<Player> createLargeSquad(int size) {
+                List<Player> squad = new java.util.ArrayList<>();
+                for (int i = 1; i <= size; i++) {
+                        squad.add(createPlayer("Player " + i, 20 + i % 15, "Country " + i, "Position " + (i % 4)));
+                }
+                return squad;
         }
 
-        @Test
-        @DisplayName("should verify service is called exactly once")
-        void shouldVerifyServiceIsCalledExactlyOnce() {
-            // Arrange
-            String country = "Italy";
-            String teamName = "ac-milan";
+        @Nested
+        @DisplayName("getUpcomingMatches Tests")
+        class UpcomingMatchesTests {
 
-            when(footballDataService.getTeamSquad(anyString(), anyString()))
-                    .thenReturn(Mono.just(Collections.emptyList()));
+                @Test
+                @DisplayName("should return OK with matches when team is found")
+                void shouldReturnOkWithMatchesWhenTeamFound() {
+                        // Arrange
+                        String country = "England";
+                        String teamNameWithHyphens = "manchester-united";
+                        String expectedTeamName = "manchester united";
 
-            // Act
-            teamController.getSquadFromScraping(country, teamName).block();
+                        List<Match> expectedMatches = Arrays.asList(
+                                        new Match("2025-10-18", "Premier League", "Manchester United", "Chelsea", "vs"),
+                                        new Match("2025-10-25", "Premier League", "Arsenal", "Manchester United",
+                                                        "vs"));
 
-            // Assert
-            verify(footballDataService, times(1)).getTeamSquad("ac milan", country);
-            verifyNoMoreInteractions(footballDataService);
+                        when(footballDataService.getUpcomingMatches(expectedTeamName, country, testUser))
+                                        .thenReturn(Mono.just(expectedMatches));
+
+                        // Act
+                        Mono<ResponseEntity<List<Match>>> result = teamController.getUpcomingMatches(country,
+                                        teamNameWithHyphens, testUser);
+
+                        // Assert
+                        StepVerifier.create(result)
+                                        .assertNext(response -> {
+                                                assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+                                                assertThat(response.getBody()).isNotNull();
+                                                assertThat(response.getBody()).hasSize(2);
+                                                assertThat(response.getBody().get(0).getHomeTeam())
+                                                                .isEqualTo("Manchester United");
+                                        })
+                                        .verifyComplete();
+
+                        verify(footballDataService).getUpcomingMatches(expectedTeamName, country, testUser);
+                }
+
+                @Test
+                @DisplayName("should return NOT_FOUND when service returns empty Mono for matches")
+                void shouldReturnNotFoundWhenServiceReturnsEmptyMonoForMatches() {
+                        // Arrange
+                        String country = "Germany";
+                        String teamName = "bayern-munich";
+
+                        when(footballDataService.getUpcomingMatches(anyString(), anyString(), any(User.class)))
+                                        .thenReturn(Mono.empty());
+
+                        // Act
+                        Mono<ResponseEntity<List<Match>>> result = teamController.getUpcomingMatches(country, teamName,
+                                        testUser);
+
+                        // Assert
+                        StepVerifier.create(result)
+                                        .assertNext(response -> {
+                                                assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
+                                                assertThat(response.getBody()).isNull();
+                                        })
+                                        .verifyComplete();
+                }
         }
-
-        @Test
-        @DisplayName("should handle case sensitive country names")
-        void shouldHandleCaseSensitiveCountryNames() {
-            // Arrange
-            String countryUpperCase = "ENGLAND";
-            String countryLowerCase = "england";
-            String teamName = "liverpool";
-
-            when(footballDataService.getTeamSquad(anyString(), anyString()))
-                    .thenReturn(Mono.just(Collections.emptyList()));
-
-            // Act
-            teamController.getSquadFromScraping(countryUpperCase, teamName).block();
-            teamController.getSquadFromScraping(countryLowerCase, teamName).block();
-
-            // Assert
-            verify(footballDataService).getTeamSquad(teamName, countryUpperCase);
-            verify(footballDataService).getTeamSquad(teamName, countryLowerCase);
-        }
-    }
-
-    // Helper methods
-    private Player createPlayer(String name, int age, String nationality, String position) {
-        Player player = new Player();
-        player.setName(name);
-        player.setAge(age);
-        player.setNationality(nationality);
-        player.setPosition(position);
-        player.setRating(7.5);
-        player.setMatches(20);
-        player.setGoals(5);
-        player.setAssist(3);
-        player.setRedCards(0);
-        player.setYellowCards(2);
-        return player;
-    }
-
-    private List<Player> createLargeSquad(int size) {
-        List<Player> squad = new java.util.ArrayList<>();
-        for (int i = 1; i <= size; i++) {
-            squad.add(createPlayer("Player " + i, 20 + i % 15, "Country " + i, "Position " + (i % 4)));
-        }
-        return squad;
-    }
-
-    @Nested
-    @DisplayName("getUpcomingMatches Tests")
-    class UpcomingMatchesTests {
-
-        @Test
-        @DisplayName("should return OK with matches when team is found")
-        void shouldReturnOkWithMatchesWhenTeamFound() {
-            // Arrange
-            String country = "England";
-            String teamNameWithHyphens = "manchester-united";
-            String expectedTeamName = "manchester united";
-
-            List<Match> expectedMatches = Arrays.asList(
-                new Match("2025-10-18", "Premier League", "Manchester United", "Chelsea", "vs"),
-                new Match("2025-10-25", "Premier League", "Arsenal", "Manchester United", "vs")
-            );
-
-            when(footballDataService.getUpcomingMatches(expectedTeamName, country))
-                .thenReturn(Mono.just(expectedMatches));
-
-            // Act
-            Mono<ResponseEntity<List<Match>>> result =
-                teamController.getUpcomingMatches(country, teamNameWithHyphens);
-
-            // Assert
-            StepVerifier.create(result)
-                .assertNext(response -> {
-                    assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
-                    assertThat(response.getBody()).isNotNull();
-                    assertThat(response.getBody()).hasSize(2);
-                    assertThat(response.getBody().get(0).getHomeTeam()).isEqualTo("Manchester United");
-                })
-                .verifyComplete();
-
-            verify(footballDataService).getUpcomingMatches(expectedTeamName, country);
-        }
-
-        @Test
-        @DisplayName("should return NOT_FOUND when service returns empty Mono for matches")
-        void shouldReturnNotFoundWhenServiceReturnsEmptyMonoForMatches() {
-            // Arrange
-            String country = "Germany";
-            String teamName = "bayern-munich";
-
-            when(footballDataService.getUpcomingMatches(anyString(), anyString()))
-                .thenReturn(Mono.empty());
-
-            // Act
-            Mono<ResponseEntity<List<Match>>> result =
-                teamController.getUpcomingMatches(country, teamName);
-
-            // Assert
-            StepVerifier.create(result)
-                .assertNext(response -> {
-                    assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
-                    assertThat(response.getBody()).isNull();
-                })
-                .verifyComplete();
-        }
-    }
 }
