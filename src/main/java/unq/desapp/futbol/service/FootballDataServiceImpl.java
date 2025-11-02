@@ -41,7 +41,12 @@ public class FootballDataServiceImpl implements FootballDataService {
     }
 
     @Override
-    public Mono<List<Match>> getUpcomingMatches(String teamName, String country) {
-        return scrapingService.getUpcomingMatches(teamName, country);
+    public Mono<List<Match>> getUpcomingMatches(String teamName, String country, User user) {
+        return scrapingService.getUpcomingMatches(teamName, country)
+                .doOnSuccess(matches -> {
+                    if (matches != null && !matches.isEmpty() && user != null) {
+                        user.addSearchHistory(SearchType.TEAM, teamName + " (" + country + ")");
+                    }
+                });
     }
 }

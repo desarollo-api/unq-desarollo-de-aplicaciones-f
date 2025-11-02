@@ -51,9 +51,13 @@ public class TeamController {
     }
 
     @GetMapping("/{country}/{name}/matches")
-    public Mono<ResponseEntity<List<Match>>> getUpcomingMatches(@PathVariable String country, @PathVariable String name) {
+    public Mono<ResponseEntity<List<Match>>> getUpcomingMatches(
+            @Parameter(description = "Country of the team", required = true, example = "England") @PathVariable String country,
+            @Parameter(description = "Name of the team, use hyphens for spaces", required = true, example = "manchester-united") @PathVariable String name,
+            @AuthenticationPrincipal User user) {
+
         String teamName = name.replace('-', ' ');
-        return footballDataService.getUpcomingMatches(teamName, country)
+        return footballDataService.getUpcomingMatches(teamName, country, user)
                 .map(ResponseEntity::ok)
                 .defaultIfEmpty(ResponseEntity.notFound().build());
     }
