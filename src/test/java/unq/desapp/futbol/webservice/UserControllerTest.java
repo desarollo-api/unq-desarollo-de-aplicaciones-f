@@ -50,8 +50,7 @@ class UserControllerTest {
             StepVerifier.create(result)
                     .assertNext(response -> {
                         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
-                        assertThat(response.getBody()).isNotNull();
-                        assertThat(response.getBody()).hasSize(2);
+                        assertThat(response.getBody()).isNotNull().hasSize(2);
                     })
                     .verifyComplete();
         }
@@ -71,11 +70,10 @@ class UserControllerTest {
             StepVerifier.create(result)
                     .assertNext(response -> {
                         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
-                        List<SearchHistoryEntry> body = response.getBody();
-                        assertThat(body).isNotNull();
-                        assertThat(body).hasSize(1);
-                        assertThat(body.get(0).getType()).isEqualTo(SearchType.PLAYER);
-                        assertThat(body.get(0).getQuery()).isEqualTo("lionel messi");
+                        assertThat(response.getBody()).isNotNull().hasSize(1)
+                                .first()
+                                .extracting(SearchHistoryEntry::getType, SearchHistoryEntry::getQuery)
+                                .containsExactly(SearchType.PLAYER, "lionel messi");
                     })
                     .verifyComplete();
         }
@@ -95,10 +93,9 @@ class UserControllerTest {
             StepVerifier.create(result)
                     .assertNext(response -> {
                         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
-                        List<SearchHistoryEntry> body = response.getBody();
-                        assertThat(body).isNotNull();
-                        assertThat(body).hasSize(1);
-                        assertThat(body.get(0).getType()).isEqualTo(SearchType.TEAM);
+                        assertThat(response.getBody()).isNotNull().hasSize(1)
+                                .first()
+                                .extracting(SearchHistoryEntry::getType).isEqualTo(SearchType.TEAM);
                     })
                     .verifyComplete();
         }
@@ -113,8 +110,7 @@ class UserControllerTest {
             StepVerifier.create(result)
                     .assertNext(response -> {
                         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
-                        assertThat(response.getBody()).isNotNull();
-                        assertThat(response.getBody()).isEmpty();
+                        assertThat(response.getBody()).isNotNull().isEmpty();
                     })
                     .verifyComplete();
         }

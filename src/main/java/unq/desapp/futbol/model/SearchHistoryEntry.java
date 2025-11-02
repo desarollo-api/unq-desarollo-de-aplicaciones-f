@@ -1,12 +1,13 @@
 package unq.desapp.futbol.model;
 
+import java.io.Serializable;
 import java.time.LocalDateTime;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import lombok.Getter;
 import lombok.NonNull;
 
 @Getter
-public class SearchHistoryEntry {
+public class SearchHistoryEntry implements Serializable {
 
     @NonNull
     private final SearchType type;

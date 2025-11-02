@@ -6,6 +6,9 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
+import java.util.stream.Stream;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.server.reactive.ServerHttpRequest;
@@ -140,95 +143,31 @@ class ReactiveJwtAuthenticationConverterTest {
     @DisplayName("convert() - Invalid Authorization Headers")
     class InvalidAuthorizationHeaders {
 
-        @Test
-        @DisplayName("should return empty Mono when Authorization header is null")
-        void shouldReturnEmptyMonoWhenAuthorizationHeaderIsNull() {
-            // Arrange
-            when(headers.getFirst(HttpHeaders.AUTHORIZATION)).thenReturn(null);
-
-            // Act
-            Mono<Authentication> result = converter.convert(exchange);
-
-            // Assert
-            StepVerifier.create(result)
-                    .expectNextCount(0)
-                    .verifyComplete();
-
-            verify(headers).getFirst(HttpHeaders.AUTHORIZATION);
+        private static Stream<String> invalidAuthorizationHeaders() {
+            return Stream.of(
+                    null, // Header is missing
+                    "", // Header is empty
+                    "   ", // Header is whitespace
+                    "SomeToken", // No "Bearer " prefix
+                    "Basic dXNlcjpwYXNz", // Wrong prefix
+                    "Bearer", // Prefix only, no token
+                    "bearer token", // Incorrect case for prefix
+                    "BEARER token" // Incorrect case for prefix
+            );
         }
 
-        @Test
-        @DisplayName("should return empty Mono when Authorization header is empty string")
-        void shouldReturnEmptyMonoWhenAuthorizationHeaderIsEmpty() {
+        @ParameterizedTest(name = "with header: \"{0}\"")
+        @MethodSource("invalidAuthorizationHeaders")
+        @DisplayName("should return empty Mono for various invalid Authorization headers")
+        void shouldReturnEmptyMonoForInvalidHeaders(String authHeader) {
             // Arrange
-            when(headers.getFirst(HttpHeaders.AUTHORIZATION)).thenReturn("");
+            when(headers.getFirst(HttpHeaders.AUTHORIZATION)).thenReturn(authHeader);
 
             // Act
             Mono<Authentication> result = converter.convert(exchange);
 
             // Assert
             StepVerifier.create(result)
-                    .expectNextCount(0)
-                    .verifyComplete();
-        }
-
-        @Test
-        @DisplayName("should return empty Mono when Authorization header is whitespace only")
-        void shouldReturnEmptyMonoWhenAuthorizationHeaderIsWhitespace() {
-            // Arrange
-            when(headers.getFirst(HttpHeaders.AUTHORIZATION)).thenReturn("   ");
-
-            // Act
-            Mono<Authentication> result = converter.convert(exchange);
-
-            // Assert
-            StepVerifier.create(result)
-                    .expectNextCount(0)
-                    .verifyComplete();
-        }
-
-        @Test
-        @DisplayName("should return empty Mono when Authorization header has no Bearer prefix")
-        void shouldReturnEmptyMonoWhenNoBearerPrefix() {
-            // Arrange
-            when(headers.getFirst(HttpHeaders.AUTHORIZATION)).thenReturn("SomeToken");
-
-            // Act
-            Mono<Authentication> result = converter.convert(exchange);
-
-            // Assert
-            StepVerifier.create(result)
-                    .expectNextCount(0)
-                    .verifyComplete();
-        }
-
-        @Test
-        @DisplayName("should return empty Mono when Authorization header has wrong prefix")
-        void shouldReturnEmptyMonoWhenWrongPrefix() {
-            // Arrange
-            when(headers.getFirst(HttpHeaders.AUTHORIZATION)).thenReturn("Basic dXNlcjpwYXNz");
-
-            // Act
-            Mono<Authentication> result = converter.convert(exchange);
-
-            // Assert
-            StepVerifier.create(result)
-                    .expectNextCount(0)
-                    .verifyComplete();
-        }
-
-        @Test
-        @DisplayName("should return empty Mono when Authorization header is only 'Bearer'")
-        void shouldReturnEmptyMonoWhenOnlyBearer() {
-            // Arrange
-            when(headers.getFirst(HttpHeaders.AUTHORIZATION)).thenReturn("Bearer");
-
-            // Act
-            Mono<Authentication> result = converter.convert(exchange);
-
-            // Assert
-            StepVerifier.create(result)
-                    .expectNextCount(0)
                     .verifyComplete();
         }
 
@@ -248,36 +187,6 @@ class ReactiveJwtAuthenticationConverterTest {
                         assertThat(((UsernamePasswordAuthenticationToken) authentication)
                                 .getPrincipal()).isEqualTo("");
                     })
-                    .verifyComplete();
-        }
-
-        @Test
-        @DisplayName("should handle case-sensitive Bearer prefix")
-        void shouldHandleCaseSensitiveBearerPrefix() {
-            // Arrange - lowercase 'bearer'
-            when(headers.getFirst(HttpHeaders.AUTHORIZATION)).thenReturn("bearer token");
-
-            // Act
-            Mono<Authentication> result = converter.convert(exchange);
-
-            // Assert - Should return empty because 'bearer' != 'Bearer'
-            StepVerifier.create(result)
-                    .expectNextCount(0)
-                    .verifyComplete();
-        }
-
-        @Test
-        @DisplayName("should handle BEARER in uppercase")
-        void shouldHandleBearerInUppercase() {
-            // Arrange
-            when(headers.getFirst(HttpHeaders.AUTHORIZATION)).thenReturn("BEARER token");
-
-            // Act
-            Mono<Authentication> result = converter.convert(exchange);
-
-            // Assert - Should return empty because 'BEARER' != 'Bearer'
-            StepVerifier.create(result)
-                    .expectNextCount(0)
                     .verifyComplete();
         }
     }
