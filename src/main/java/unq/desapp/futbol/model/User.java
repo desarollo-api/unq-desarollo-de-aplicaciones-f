@@ -20,18 +20,15 @@ public class User implements UserDetails {
     private String firstName;
     private String lastName;
     private Role role;
-    private List<SearchHistoryEntry> searchHistory = new ArrayList<>(); // Initialized by Builder.Default
+    private List<SearchHistoryEntry> searchHistory = new ArrayList<>();
 
-    // Custom constructor to maintain compatibility with existing tests and
-    // AuthController.register
-    // This constructor will initialize searchHistory to an empty ArrayList
     public User(String email, String password, String firstName, String lastName, Role role) {
         this.email = email;
         this.password = password;
         this.firstName = firstName;
         this.lastName = lastName;
         this.role = role;
-        this.searchHistory = new ArrayList<>(); // Ensure it's always initialized
+        this.searchHistory = new ArrayList<>();
     }
 
     public void addSearchHistory(SearchType type, String query) {

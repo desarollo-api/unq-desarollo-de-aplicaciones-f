@@ -34,44 +34,42 @@ public class SecurityConfig {
     @Bean
     @Profile("!test")
     public SecurityWebFilterChain securityWebFilterChain(
-        ServerHttpSecurity http,
-        @Qualifier(AuthenticationManager.JWT) ReactiveAuthenticationManager authenticationManager,
-        ReactiveJwtAuthenticationConverter authenticationConverter,
-        ReactiveAuthenticationEntryPoint authenticationEntryPoint) {
-        AuthenticationWebFilter authenticationWebFilter =
-            buildAuthenticationWebFilter(
+            ServerHttpSecurity http,
+            @Qualifier(AuthenticationManager.JWT) ReactiveAuthenticationManager authenticationManager,
+            ReactiveJwtAuthenticationConverter authenticationConverter,
+            ReactiveAuthenticationEntryPoint authenticationEntryPoint) {
+        AuthenticationWebFilter authenticationWebFilter = buildAuthenticationWebFilter(
                 authenticationManager,
                 authenticationConverter,
                 authenticationEntryPoint);
-        CorsConfigurationSource corsConfigurationSource =
-            buildCorsConfigurationSource();
+        CorsConfigurationSource corsConfigurationSource = buildCorsConfigurationSource();
 
         return http
-            .csrf(ServerHttpSecurity.CsrfSpec::disable)
-            .cors(cors -> cors.configurationSource(corsConfigurationSource))
-            .authorizeExchange(authorizeExchange -> authorizeExchange
-                .pathMatchers(Auth.PATTERN, PathPattern.ACTUATOR, "/swagger-ui.html",
-                    "/swagger-ui/**",
-                    "/v3/api-docs/**",
-                    "/webjars/**")
-                .permitAll()
-                .anyExchange()
-                .authenticated())
-            .exceptionHandling(exceptionHandling -> exceptionHandling
-                .authenticationEntryPoint(authenticationEntryPoint))
-            .addFilterAt(authenticationWebFilter, SecurityWebFiltersOrder.AUTHENTICATION)
-            .build();
+                .csrf(ServerHttpSecurity.CsrfSpec::disable)
+                .cors(cors -> cors.configurationSource(corsConfigurationSource))
+                .authorizeExchange(authorizeExchange -> authorizeExchange
+                        .pathMatchers(PathPattern.AUTH, PathPattern.ACTUATOR, "/swagger-ui.html",
+                                "/swagger-ui/**",
+                                "/v3/api-docs/**",
+                                "/webjars/**")
+                        .permitAll()
+                        .anyExchange()
+                        .authenticated())
+                .exceptionHandling(exceptionHandling -> exceptionHandling
+                        .authenticationEntryPoint(authenticationEntryPoint))
+                .addFilterAt(authenticationWebFilter, SecurityWebFiltersOrder.AUTHENTICATION)
+                .build();
     }
 
     private AuthenticationWebFilter buildAuthenticationWebFilter(
-        ReactiveAuthenticationManager authenticationManager,
-        ReactiveJwtAuthenticationConverter authenticationConverter,
-        ReactiveAuthenticationEntryPoint authenticationEntryPoint) {
+            ReactiveAuthenticationManager authenticationManager,
+            ReactiveJwtAuthenticationConverter authenticationConverter,
+            ReactiveAuthenticationEntryPoint authenticationEntryPoint) {
         AuthenticationWebFilter filter = new AuthenticationWebFilter(authenticationManager);
 
         filter.setServerAuthenticationConverter(authenticationConverter);
         filter.setAuthenticationFailureHandler(
-            new ServerAuthenticationEntryPointFailureHandler(authenticationEntryPoint));
+                new ServerAuthenticationEntryPointFailureHandler(authenticationEntryPoint));
 
         return filter;
     }
