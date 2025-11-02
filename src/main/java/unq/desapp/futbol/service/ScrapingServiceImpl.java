@@ -30,6 +30,7 @@ public class ScrapingServiceImpl implements ScrapingService {
     private static final String WHOSCORED_BASE_URL = "https://www.whoscored.com";
     private static final String SEARCH_URL_TEMPLATE = WHOSCORED_BASE_URL + "/search/?t=%s";
     private static final String USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/108.0.0.0 Safari/537.36";
+    private static final String HEADER_ACCEPT = "Accept";
 
     private final ObjectMapper objectMapper = new ObjectMapper();
 
@@ -58,7 +59,7 @@ public class ScrapingServiceImpl implements ScrapingService {
 
         String jsonResponse = Jsoup.connect(apiUrl)
                 .ignoreContentType(true)
-                .header("Accept", "application/json")
+                .header(HEADER_ACCEPT, "application/json")
                 .userAgent(USER_AGENT)
                 .get()
                 .body()
@@ -102,7 +103,7 @@ public class ScrapingServiceImpl implements ScrapingService {
                 .userAgent(USER_AGENT)
                 .referrer("https://www.whoscored.com/")
                 .header("Accept-Language", "en-US,en;q=0.9")
-                .header("Accept", "text/html")
+                .header(HEADER_ACCEPT, "text/html")
                 .get();
 
         Elements resultRows = searchResultPage.select(".search-result table tr");
@@ -159,7 +160,7 @@ public class ScrapingServiceImpl implements ScrapingService {
 
         String jsonResponse = Jsoup.connect(apiUrl)
                 .ignoreContentType(true)
-                .header("Accept", "application/json")
+                .header(HEADER_ACCEPT, "application/json")
                 .userAgent(USER_AGENT)
                 .get()
                 .body()
@@ -200,7 +201,7 @@ public class ScrapingServiceImpl implements ScrapingService {
                 .userAgent(USER_AGENT)
                 .referrer("https://www.whoscored.com/")
                 .header("Accept-Language", "en-US,en;q=0.9")
-                .header("Accept", "text/html")
+                .header(HEADER_ACCEPT, "text/html")
                 .get();
 
         Element playerLink = searchResultPage.selectFirst(".search-result a[href^='/Players/']");

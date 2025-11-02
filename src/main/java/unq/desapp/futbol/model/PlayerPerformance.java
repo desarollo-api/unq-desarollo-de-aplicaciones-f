@@ -3,7 +3,6 @@ package unq.desapp.futbol.model;
 import lombok.Getter;
 import java.util.Comparator;
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Getter
 public class PlayerPerformance {
@@ -16,7 +15,7 @@ public class PlayerPerformance {
         this.seasons = seasons.stream()
                 .sorted(Comparator.comparing(SeasonPerformance::season).reversed())
                 .limit(5)
-                .collect(Collectors.toList());
+                .toList();
         this.average = calculateAverage(this.seasons);
     }
 

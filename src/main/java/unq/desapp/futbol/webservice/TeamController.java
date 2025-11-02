@@ -1,8 +1,9 @@
 package unq.desapp.futbol.webservice;
 
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.ArraySchema;
@@ -13,12 +14,14 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import reactor.core.publisher.Mono;
 import unq.desapp.futbol.model.Player;
+import unq.desapp.futbol.model.User;
 import unq.desapp.futbol.service.FootballDataService;
 
 import java.util.List;
 
 @RestController
 @Tag(name = "Teams")
+@SecurityRequirement(name = "BearerAuth")
 @RequestMapping("/teams")
 public class TeamController {
 
@@ -29,27 +32,19 @@ public class TeamController {
     }
 
     @GetMapping("/{country}/{name}/squad")
-    @Operation(
-        summary = "Get Team Squad",
-        description = "Returns the squad for a given team, including player name, matches played, goals, assists, and rating."
-    )
+    @Operation(summary = "Get Team Squad", description = "Returns the squad for a given team. This action is recorded in the user's search history.")
     @ApiResponses(value = {
-        @ApiResponse(responseCode = "200", description = "Successfully retrieved the squad",
-            content = @Content(mediaType = "application/json",
-                array = @ArraySchema(schema = @Schema(implementation = Player.class)))),
-        @ApiResponse(responseCode = "401", description = "Unauthorized - JWT token is missing or invalid",
-            content = @Content),
-        @ApiResponse(responseCode = "404", description = "Team not found",
-            content = @Content)
+            @ApiResponse(responseCode = "200", description = "Successfully retrieved the squad", content = @Content(mediaType = "application/json", array = @ArraySchema(schema = @Schema(implementation = Player.class)))),
+            @ApiResponse(responseCode = "401", description = "Unauthorized - JWT token is missing or invalid", content = @Content),
+            @ApiResponse(responseCode = "404", description = "Team not found", content = @Content)
     })
     public Mono<ResponseEntity<List<Player>>> getSquadFromScraping(
-        @Parameter(description = "Country of the team", required = true, example = "England")
-        @PathVariable String country,
-        @Parameter(description = "Name of the team, use hyphens for spaces", required = true, example = "manchester-united")
-        @PathVariable String name) {
-        
+            @Parameter(description = "Country of the team", required = true, example = "England") @PathVariable String country,
+            @Parameter(description = "Name of the team, use hyphens for spaces", required = true, example = "manchester-united") @PathVariable String name,
+            @AuthenticationPrincipal User user) {
+
         String teamName = name.replace('-', ' ');
-        return footballDataService.getTeamSquad(teamName, country)
+        return footballDataService.getTeamSquad(teamName, country, user)
                 .map(ResponseEntity::ok)
                 .defaultIfEmpty(ResponseEntity.notFound().build());
     }
