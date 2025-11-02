@@ -8,10 +8,6 @@ import org.springframework.http.HttpMethod;
 
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public final class GeneralSecurityConstants {
-    @NoArgsConstructor(access = AccessLevel.PRIVATE)
-    public final class Auth {
-        public static final String PATTERN = "/auth/**";
-    }
 
     @NoArgsConstructor(access = AccessLevel.PRIVATE)
     public final class Cors {
