@@ -2,7 +2,6 @@ package unq.desapp.futbol.security;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.reset;
@@ -18,6 +17,7 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
+import org.mockito.Captor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.core.io.buffer.DataBuffer;
@@ -46,6 +46,9 @@ class ReactiveAuthenticationEntryPointTest {
 
     @Mock
     private HttpHeaders headers;
+
+    @Captor
+    private ArgumentCaptor<Mono<DataBuffer>> captor;
 
     private DataBufferFactory bufferFactory;
     private ReactiveAuthenticationEntryPoint entryPoint;
@@ -82,23 +85,22 @@ class ReactiveAuthenticationEntryPointTest {
             verify(response).setStatusCode(HttpStatus.UNAUTHORIZED);
             verify(headers).setContentType(MediaType.APPLICATION_JSON);
 
-            ArgumentCaptor<Mono<DataBuffer>> captor = ArgumentCaptor.forClass(Mono.class);
             verify(response).writeWith(captor.capture());
 
-            Mono<DataBuffer> capturedMono = captor.getValue();
-            DataBuffer buffer = capturedMono.block();
+            DataBuffer buffer = captor.getValue().block();
 
             String json = new String(getBytes(buffer), StandardCharsets.UTF_8);
-            assertThat(json).contains("\"error\": \"Unauthorized\"");
-            assertThat(json).contains("\"message\": \"Invalid credentials\"");
+            assertThat(json)
+                    .contains("\"error\": \"Unauthorized\"")
+                    .contains("\"message\": \"Invalid credentials\"");
         }
 
         @Test
         @DisplayName("should handle InsufficientAuthenticationException")
         void shouldHandleInsufficientAuthenticationException() {
             // Arrange
-            AuthenticationException exception =
-                    new InsufficientAuthenticationException("Full authentication is required");
+            AuthenticationException exception = new InsufficientAuthenticationException(
+                    "Full authentication is required");
 
             // Act
             Mono<Void> result = entryPoint.commence(exchange, exception);
@@ -110,21 +112,22 @@ class ReactiveAuthenticationEntryPointTest {
             verify(response).setStatusCode(HttpStatus.UNAUTHORIZED);
             verify(headers).setContentType(MediaType.APPLICATION_JSON);
 
-            ArgumentCaptor<Mono<DataBuffer>> captor = ArgumentCaptor.forClass(Mono.class);
             verify(response).writeWith(captor.capture());
 
             DataBuffer buffer = captor.getValue().block();
             String json = new String(getBytes(buffer), StandardCharsets.UTF_8);
 
-            assertThat(json).contains("\"error\": \"Unauthorized\"");
-            assertThat(json).contains("\"message\": \"Full authentication is required\"");
+            assertThat(json)
+                    .contains("\"error\": \"Unauthorized\"")
+                    .contains("\"message\": \"Full authentication is required\"");
         }
 
         @Test
         @DisplayName("should handle generic AuthenticationException")
         void shouldHandleGenericAuthenticationException() {
             // Arrange
-            AuthenticationException exception = new AuthenticationException("Generic auth error") {};
+            AuthenticationException exception = new AuthenticationException("Generic auth error") {
+            };
 
             // Act
             Mono<Void> result = entryPoint.commence(exchange, exception);
@@ -152,23 +155,24 @@ class ReactiveAuthenticationEntryPointTest {
             entryPoint.commence(exchange, exception).block();
 
             // Assert
-            ArgumentCaptor<Mono<DataBuffer>> captor = ArgumentCaptor.forClass(Mono.class);
             verify(response).writeWith(captor.capture());
 
             DataBuffer buffer = captor.getValue().block();
             String json = new String(getBytes(buffer), StandardCharsets.UTF_8);
 
             // Verify JSON structure
-            assertThat(json).startsWith("{\"error\": \"Unauthorized\", \"message\": \"");
-            assertThat(json).endsWith("\"}");
-            assertThat(json).contains("Test message");
+            assertThat(json)
+                    .startsWith("{\"error\": \"Unauthorized\", \"message\": \"")
+                    .endsWith("\"}")
+                    .contains("Test message");
         }
 
         @Test
         @DisplayName("should handle exception with null message")
         void shouldHandleExceptionWithNullMessage() {
             // Arrange
-            AuthenticationException exception = new AuthenticationException(null) {};
+            AuthenticationException exception = new AuthenticationException(null) {
+            };
 
             // Act
             Mono<Void> result = entryPoint.commence(exchange, exception);
@@ -177,14 +181,14 @@ class ReactiveAuthenticationEntryPointTest {
             StepVerifier.create(result)
                     .verifyComplete();
 
-            ArgumentCaptor<Mono<DataBuffer>> captor = ArgumentCaptor.forClass(Mono.class);
             verify(response).writeWith(captor.capture());
 
             DataBuffer buffer = captor.getValue().block();
             String json = new String(getBytes(buffer), StandardCharsets.UTF_8);
 
-            assertThat(json).contains("\"error\": \"Unauthorized\"");
-            assertThat(json).contains("\"message\": \"null\"");
+            assertThat(json)
+                    .contains("\"error\": \"Unauthorized\"")
+                    .contains("\"message\": \"null\"");
         }
 
         @Test
@@ -197,7 +201,6 @@ class ReactiveAuthenticationEntryPointTest {
             entryPoint.commence(exchange, exception).block();
 
             // Assert
-            ArgumentCaptor<Mono<DataBuffer>> captor = ArgumentCaptor.forClass(Mono.class);
             verify(response).writeWith(captor.capture());
 
             DataBuffer buffer = captor.getValue().block();
@@ -217,7 +220,6 @@ class ReactiveAuthenticationEntryPointTest {
             entryPoint.commence(exchange, exception).block();
 
             // Assert
-            ArgumentCaptor<Mono<DataBuffer>> captor = ArgumentCaptor.forClass(Mono.class);
             verify(response).writeWith(captor.capture());
 
             DataBuffer buffer = captor.getValue().block();
@@ -242,14 +244,14 @@ class ReactiveAuthenticationEntryPointTest {
             StepVerifier.create(result)
                     .verifyComplete();
 
-            ArgumentCaptor<Mono<DataBuffer>> captor = ArgumentCaptor.forClass(Mono.class);
             verify(response).writeWith(captor.capture());
 
             DataBuffer buffer = captor.getValue().block();
             String json = new String(getBytes(buffer), StandardCharsets.UTF_8);
 
-            assertThat(json).contains(longMessage);
-            assertThat(json.length()).isGreaterThan(1000);
+            assertThat(json)
+                    .contains(longMessage)
+                    .hasSizeGreaterThan(1030); // Approx length of message + json wrapper
         }
 
         @Test
@@ -263,7 +265,6 @@ class ReactiveAuthenticationEntryPointTest {
             entryPoint.commence(exchange, exception).block();
 
             // Assert
-            ArgumentCaptor<Mono<DataBuffer>> captor = ArgumentCaptor.forClass(Mono.class);
             verify(response).writeWith(captor.capture());
 
             DataBuffer buffer = captor.getValue().block();
@@ -283,7 +284,6 @@ class ReactiveAuthenticationEntryPointTest {
             entryPoint.commence(exchange, exception).block();
 
             // Assert
-            ArgumentCaptor<Mono<DataBuffer>> captor = ArgumentCaptor.forClass(Mono.class);
             verify(response).writeWith(captor.capture());
 
             DataBuffer buffer = captor.getValue().block();
@@ -308,7 +308,6 @@ class ReactiveAuthenticationEntryPointTest {
 
             // Assert
             verify(response).setStatusCode(HttpStatus.UNAUTHORIZED);
-            verify(response).setStatusCode(eq(HttpStatus.UNAUTHORIZED));
         }
 
         @Test
@@ -334,7 +333,7 @@ class ReactiveAuthenticationEntryPointTest {
             entryPoint.commence(exchange, exception).block();
 
             // Assert
-            verify(response).writeWith(any(Mono.class));
+            verify(response).writeWith(any());
         }
 
         @Test
@@ -347,7 +346,6 @@ class ReactiveAuthenticationEntryPointTest {
             entryPoint.commence(exchange, exception).block();
 
             // Assert
-            ArgumentCaptor<Mono<DataBuffer>> captor = ArgumentCaptor.forClass(Mono.class);
             verify(response).writeWith(captor.capture());
 
             DataBuffer buffer = captor.getValue().block();
@@ -419,7 +417,7 @@ class ReactiveAuthenticationEntryPointTest {
 
             // Subscription completes the writeWith operation
             result.block();
-            verify(response).writeWith(any(Mono.class));
+            verify(response).writeWith(any());
         }
 
         @Test
@@ -437,7 +435,7 @@ class ReactiveAuthenticationEntryPointTest {
             // Setup operations happen once because the response was prepared eagerly
             verify(response, times(1)).setStatusCode(HttpStatus.UNAUTHORIZED);
             verify(headers, times(1)).setContentType(MediaType.APPLICATION_JSON);
-            verify(response, times(1)).writeWith(any(Mono.class));
+            verify(response, times(1)).writeWith(any());
         }
 
         @Test
@@ -519,7 +517,7 @@ class ReactiveAuthenticationEntryPointTest {
             verify(response).getHeaders();
             verify(headers).setContentType(MediaType.APPLICATION_JSON);
             verify(response).bufferFactory();
-            verify(response).writeWith(any(Mono.class));
+            verify(response).writeWith(any());
             verifyNoMoreInteractions(response, headers);
         }
 
@@ -530,7 +528,8 @@ class ReactiveAuthenticationEntryPointTest {
             AuthenticationException[] exceptions = {
                     new BadCredentialsException("Bad creds"),
                     new InsufficientAuthenticationException("Not authenticated"),
-                    new AuthenticationException("Generic") {}
+                    new AuthenticationException("Generic") {
+                    }
             };
 
             for (AuthenticationException exception : exceptions) {

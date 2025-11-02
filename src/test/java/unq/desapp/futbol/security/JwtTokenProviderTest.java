@@ -6,7 +6,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.Base64;
 import org.junit.jupiter.api.Test;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import unq.desapp.futbol.model.Role;
+import unq.desapp.futbol.model.User;
 
 class JwtTokenProviderTest {
 
@@ -15,10 +16,10 @@ class JwtTokenProviderTest {
         // Arrange
         String secretBase64 = Base64.getEncoder().encodeToString(mockSecretBytes());
         JwtTokenProvider tokenProvider = new JwtTokenProvider(secretBase64, 3_600_000L);
-        UsernamePasswordAuthenticationToken auth = new UsernamePasswordAuthenticationToken("john.doe", "password");
+        User user = new User("john.doe", "password", "John", "Doe", Role.USER);
 
         // Act
-        String token = tokenProvider.generateToken(auth);
+        String token = tokenProvider.generateToken(user);
         String username = tokenProvider.getUsernameFromToken(token);
 
         // Assert
@@ -45,10 +46,10 @@ class JwtTokenProviderTest {
         // Arrange
         String secretBase64 = Base64.getEncoder().encodeToString(mockSecretBytes());
         JwtTokenProvider expiredProvider = new JwtTokenProvider(secretBase64, -1_000L);
-        UsernamePasswordAuthenticationToken auth = new UsernamePasswordAuthenticationToken("alice", "pw");
+        User user = new User("alice@example.com", "pw", "Alice", "Test", Role.USER);
 
         // Act
-        String expiredToken = expiredProvider.generateToken(auth);
+        String expiredToken = expiredProvider.generateToken(user);
 
         // Assert
         assertFalse(expiredProvider.validateToken(expiredToken));
