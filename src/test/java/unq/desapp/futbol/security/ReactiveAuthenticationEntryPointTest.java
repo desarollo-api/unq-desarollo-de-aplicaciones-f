@@ -97,8 +97,8 @@ class ReactiveAuthenticationEntryPointTest {
         @DisplayName("should handle InsufficientAuthenticationException")
         void shouldHandleInsufficientAuthenticationException() {
             // Arrange
-            AuthenticationException exception =
-                    new InsufficientAuthenticationException("Full authentication is required");
+            AuthenticationException exception = new InsufficientAuthenticationException(
+                    "Full authentication is required");
 
             // Act
             Mono<Void> result = entryPoint.commence(exchange, exception);
@@ -124,7 +124,8 @@ class ReactiveAuthenticationEntryPointTest {
         @DisplayName("should handle generic AuthenticationException")
         void shouldHandleGenericAuthenticationException() {
             // Arrange
-            AuthenticationException exception = new AuthenticationException("Generic auth error") {};
+            AuthenticationException exception = new AuthenticationException("Generic auth error") {
+            };
 
             // Act
             Mono<Void> result = entryPoint.commence(exchange, exception);
@@ -168,7 +169,8 @@ class ReactiveAuthenticationEntryPointTest {
         @DisplayName("should handle exception with null message")
         void shouldHandleExceptionWithNullMessage() {
             // Arrange
-            AuthenticationException exception = new AuthenticationException(null) {};
+            AuthenticationException exception = new AuthenticationException(null) {
+            };
 
             // Act
             Mono<Void> result = entryPoint.commence(exchange, exception);
@@ -530,7 +532,8 @@ class ReactiveAuthenticationEntryPointTest {
             AuthenticationException[] exceptions = {
                     new BadCredentialsException("Bad creds"),
                     new InsufficientAuthenticationException("Not authenticated"),
-                    new AuthenticationException("Generic") {}
+                    new AuthenticationException("Generic") {
+                    }
             };
 
             for (AuthenticationException exception : exceptions) {
