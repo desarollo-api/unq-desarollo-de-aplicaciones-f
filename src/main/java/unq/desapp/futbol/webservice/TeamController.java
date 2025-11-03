@@ -51,6 +51,12 @@ public class TeamController {
     }
 
     @GetMapping("/{country}/{name}/matches")
+    @Operation(summary = "Get Team Upcoming Matches", description = "Returns the upcoming matches for a given team. This action is recorded in the user's search history.")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Successfully retrieved the upcoming matches", content = @Content(mediaType = "application/json", array = @ArraySchema(schema = @Schema(implementation = Match.class)))),
+            @ApiResponse(responseCode = "401", description = "Unauthorized - JWT token is missing or invalid", content = @Content),
+            @ApiResponse(responseCode = "404", description = "Team not found", content = @Content)
+    })
     public Mono<ResponseEntity<List<Match>>> getUpcomingMatches(
             @Parameter(description = "Country of the team", required = true, example = "England") @PathVariable String country,
             @Parameter(description = "Name of the team, use hyphens for spaces", required = true, example = "manchester-united") @PathVariable String name,
