@@ -239,65 +239,85 @@ public class ScrapingServiceImpl implements ScrapingService {
     }
 
     private List<Match> scrapeUpcomingMatches(String teamName, String country) throws IOException {
-        String teamPageUrl = searchTeam(teamName, country);
-        String fixturesPageUrl = teamPageUrl.replace("Show", "Fixtures");
-        logger.info("Scraping matches from URL: {}", fixturesPageUrl);
-        Document fixturesPage = Jsoup.connect(fixturesPageUrl).userAgent(USER_AGENT).get();
+        String fixturesUrl = buildFixturesUrl(teamName, country);
+        String fixturesData = buildFixturesData(fixturesUrl);
 
-        Elements scripts = fixturesPage.getElementsByTag("script");
-        String scriptContent = scripts.stream()
-                .map(Element::data)
-                .filter(s -> s.contains("var initialMatches"))
-                .findFirst()
-                .orElse(null);
-
-        if (scriptContent == null) {
-            logger.warn("Could not find matches data script on page: {}", fixturesPageUrl);
+        if (fixturesData == null) {
+            logger.warn("Could not find matches data script on page: {}", fixturesUrl);
             return Collections.emptyList();
         }
 
-        Pattern pattern = Pattern.compile("var initialMatches\\s+=\\s+(\\[.*\\]);", Pattern.DOTALL);
-        Matcher matcher = pattern.matcher(scriptContent);
+        Matcher dataMatcher = Pattern.compile("require\\.config\\.params\\['args']\\s+=\\s+(\\{.*\\});", Pattern.DOTALL)
+                .matcher(fixturesData);
+        boolean hasMatchesData = dataMatcher.find();
 
-        if (!matcher.find()) {
-            logger.warn("Could not match matches data regex on page: {}", fixturesPageUrl);
+        if (!hasMatchesData) {
+            logger.warn("Could not find matches data on page: {}", fixturesUrl);
             return Collections.emptyList();
         }
 
-        String matchesJson = matcher.group(1);
-        List<List<Object>> rawMatches = objectMapper.readValue(matchesJson, new TypeReference<>() {
-        });
-
+        List<List<Object>> fixtureMatches = buildFixtureMatches(dataMatcher);
         List<Match> upcomingMatches = new ArrayList<>();
-        for (List<Object> rawMatch : rawMatches) {
-            Match match = parseMatchFromRawData(rawMatch);
-            if (match != null && "vs".equals(match.getResult())) { // "vs" indicates a future match
-                upcomingMatches.add(match);
+
+        for (List<Object> fixtureMatch : fixtureMatches) {
+            Match upcomingMatch = buildUpcomingMatch(fixtureMatch);
+
+            if (upcomingMatch != null) {
+                upcomingMatches.add(upcomingMatch);
             }
         }
-        logger.info("Successfully scraped {} upcoming matches.", upcomingMatches.size());
+
         return upcomingMatches;
     }
 
-    private Match parseMatchFromRawData(List<Object> rawData) {
-        // Based on analysis of the 'initialMatches' JavaScript array
-        // Indices: 2: date, 5: competition, 6: homeTeam, 7: awayTeam, 8: result
-        try {
-            if (rawData.size() < 9) {
-                logger.warn("Skipping malformed match data row (not enough elements): {}", rawData);
-                return null;
-            }
-            String date = rawData.get(2).toString();
-            String competition = rawData.get(5).toString();
-            String homeTeam = rawData.get(6).toString();
-            String awayTeam = rawData.get(7).toString();
-            String result = rawData.get(8).toString();
+    private String buildFixturesUrl(String teamName, String country) throws IOException {
+        return searchTeam(teamName, country).replace("show", "fixtures");
+    }
 
-            return new Match(date, competition, homeTeam, awayTeam, result);
-        } catch (ClassCastException | IndexOutOfBoundsException e) {
-            logger.warn("Skipping malformed match data row due to unexpected format: {}", rawData, e);
+    private String buildFixturesData(String fixturesUrl) throws IOException {
+        Document fixturesPage = Jsoup.connect(fixturesUrl).userAgent(USER_AGENT).get();
+        Elements fixturesPageScripts = fixturesPage.getElementsByTag("script");
+
+        return fixturesPageScripts.stream()
+                .map(Element::data)
+                .filter(s -> s.contains("require.config.params['args']"))
+                .findFirst()
+                .orElse(null);
+    }
+
+    private List<List<Object>> buildFixtureMatches(Matcher dataMatcher) throws IOException {
+        String dataJson = dataMatcher.group(1)
+                .replaceAll("([\\{,]\\s*)(\\w+)(\\s*:)", "$1\"$2\"$3")
+                .replaceAll("'", "\"")
+                .replaceAll(",\\s*,", ",\"\",")
+                .replaceAll(",\\s*]", "]");
+
+        JsonNode matchesNode = objectMapper.readTree(dataJson)
+                .path("fixtureMatches");
+
+        return matchesNode.isArray()
+                ? objectMapper.convertValue(matchesNode, new TypeReference<List<List<Object>>>() {
+                })
+                : Collections.emptyList();
+    }
+
+    private Match buildUpcomingMatch(List<Object> fixtureMatch) {
+        boolean hasEnoughMatchData = fixtureMatch.size() >= 17;
+        if (!hasEnoughMatchData) {
+            logger.warn("Skipping malformed match data node (not enough elements)");
             return null;
-
         }
+
+        boolean isUpcomingMatch = "vs".equals(fixtureMatch.get(10).toString());
+        if (!isUpcomingMatch) {
+            return null;
+        }
+
+        String date = fixtureMatch.get(2).toString();
+        String competition = fixtureMatch.get(16).toString();
+        String homeTeam = fixtureMatch.get(5).toString();
+        String awayTeam = fixtureMatch.get(8).toString();
+
+        return new Match(date, competition, homeTeam, awayTeam);
     }
 }
