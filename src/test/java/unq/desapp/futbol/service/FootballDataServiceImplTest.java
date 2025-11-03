@@ -121,9 +121,9 @@ class FootballDataServiceImplTest {
                 String teamName = "Boca Juniors";
                 String country = "Argentina";
 
-                Match match1 = new Match("2024-10-20", "Liga Profesional", "Boca Juniors", "River Plate", null);
-                Match match2 = new Match("2024-10-27", "Copa Argentina", "Independiente", "Boca Juniors", null);
-                Match match3 = new Match("2024-11-03", "Liga Profesional", "Boca Juniors", "Racing", null);
+                Match match1 = new Match("2024-10-20", "Liga Profesional", "Boca Juniors", "River Plate");
+                Match match2 = new Match("2024-10-27", "Copa Argentina", "Independiente", "Boca Juniors");
+                Match match3 = new Match("2024-11-03", "Liga Profesional", "Boca Juniors", "Racing");
                 List<Match> expectedMatches = Arrays.asList(match1, match2, match3);
 
                 ScrapingService scrapingService = mock(ScrapingService.class);
@@ -269,7 +269,7 @@ class FootballDataServiceImplTest {
                 String teamName = "Boca Juniors";
                 String country = "Argentina";
 
-                Match match = new Match("2024-10-20", "Liga Profesional", "Boca Juniors", "River Plate", null);
+                Match match = new Match("2024-10-20", "Liga Profesional", "Boca Juniors", "River Plate");
                 List<Match> expectedMatches = Collections.singletonList(match);
 
                 ScrapingService scrapingService = mock(ScrapingService.class);
@@ -332,7 +332,7 @@ class FootballDataServiceImplTest {
                 String teamName = "Test Team";
                 String country = "Test Country";
 
-                Match match = new Match("2024-10-20", null, "Home Team", "Away Team", null);
+                Match match = new Match("2024-10-20", null, "Home Team", "Away Team");
                 List<Match> expectedMatches = Collections.singletonList(match);
 
                 ScrapingService scrapingService = mock(ScrapingService.class);
@@ -350,7 +350,6 @@ class FootballDataServiceImplTest {
                                         assertThat(matches).hasSize(1);
                                         assertThat(matches.get(0).getDate()).isEqualTo("2024-10-20");
                                         assertThat(matches.get(0).getCompetition()).isNull();
-                                        assertThat(matches.get(0).getResult()).isNull();
                                         return true;
                                 })
                                 .verifyComplete();

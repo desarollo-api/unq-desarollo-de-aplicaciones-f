@@ -431,9 +431,8 @@ class TeamControllerTest {
                         String expectedTeamName = "manchester united";
 
                         List<Match> expectedMatches = Arrays.asList(
-                                        new Match("2025-10-18", "Premier League", "Manchester United", "Chelsea", "vs"),
-                                        new Match("2025-10-25", "Premier League", "Arsenal", "Manchester United",
-                                                        "vs"));
+                                        new Match("2025-10-18", "Premier League", "Manchester United", "Chelsea"),
+                                        new Match("2025-10-25", "Premier League", "Arsenal", "Manchester United"));
 
                         when(footballDataService.getUpcomingMatches(expectedTeamName, country, testUser))
                                         .thenReturn(Mono.just(expectedMatches));
