@@ -1,5 +1,6 @@
 package unq.desapp.futbol.service;
 
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.jsoup.Jsoup;
@@ -11,6 +12,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
+import unq.desapp.futbol.model.Match;
 import unq.desapp.futbol.model.Player;
 import unq.desapp.futbol.model.PlayerPerformance;
 import unq.desapp.futbol.model.SeasonPerformance;
@@ -222,5 +224,100 @@ public class ScrapingServiceImpl implements ScrapingService {
         } else {
             throw new IllegalArgumentException("Cannot extract playerId from URL: " + playerUrl);
         }
+    }
+
+    // UPCOMING MATCHES
+
+    @Override
+    public Mono<List<Match>> getUpcomingMatches(String teamName, String country) {
+        return Mono.fromCallable(() -> scrapeUpcomingMatches(teamName, country))
+                .subscribeOn(Schedulers.boundedElastic())
+                .onErrorResume(e -> {
+                    logger.error("Error scraping upcoming matches for team: {} in country: {}", teamName, country, e);
+                    return Mono.empty();
+                });
+    }
+
+    private List<Match> scrapeUpcomingMatches(String teamName, String country) throws IOException {
+        String fixturesUrl = buildFixturesUrl(teamName, country);
+        String fixturesData = buildFixturesData(fixturesUrl);
+
+        if (fixturesData == null) {
+            logger.warn("Could not find matches data script on page: {}", fixturesUrl);
+            return Collections.emptyList();
+        }
+
+        Matcher dataMatcher = Pattern.compile("require\\.config\\.params\\['args']\\s+=\\s+(\\{.*\\});", Pattern.DOTALL)
+                .matcher(fixturesData);
+        boolean hasMatchesData = dataMatcher.find();
+
+        if (!hasMatchesData) {
+            logger.warn("Could not find matches data on page: {}", fixturesUrl);
+            return Collections.emptyList();
+        }
+
+        List<List<Object>> fixtureMatches = buildFixtureMatches(dataMatcher);
+        List<Match> upcomingMatches = new ArrayList<>();
+
+        for (List<Object> fixtureMatch : fixtureMatches) {
+            Match upcomingMatch = buildUpcomingMatch(fixtureMatch);
+
+            if (upcomingMatch != null) {
+                upcomingMatches.add(upcomingMatch);
+            }
+        }
+
+        return upcomingMatches;
+    }
+
+    private String buildFixturesUrl(String teamName, String country) throws IOException {
+        return searchTeam(teamName, country).replace("show", "fixtures");
+    }
+
+    private String buildFixturesData(String fixturesUrl) throws IOException {
+        Document fixturesPage = Jsoup.connect(fixturesUrl).userAgent(USER_AGENT).get();
+        Elements fixturesPageScripts = fixturesPage.getElementsByTag("script");
+
+        return fixturesPageScripts.stream()
+                .map(Element::data)
+                .filter(s -> s.contains("require.config.params['args']"))
+                .findFirst()
+                .orElse(null);
+    }
+
+    private List<List<Object>> buildFixtureMatches(Matcher dataMatcher) throws IOException {
+        String dataJson = dataMatcher.group(1)
+                .replaceAll("([\\{,]\\s*)(\\w+)(\\s*:)", "$1\"$2\"$3")
+                .replaceAll("'", "\"")
+                .replaceAll(",\\s*,", ",\"\",")
+                .replaceAll(",\\s*]", "]");
+
+        JsonNode matchesNode = objectMapper.readTree(dataJson)
+                .path("fixtureMatches");
+
+        return matchesNode.isArray()
+                ? objectMapper.convertValue(matchesNode, new TypeReference<List<List<Object>>>() {
+                })
+                : Collections.emptyList();
+    }
+
+    private Match buildUpcomingMatch(List<Object> fixtureMatch) {
+        boolean hasEnoughMatchData = fixtureMatch.size() >= 17;
+        if (!hasEnoughMatchData) {
+            logger.warn("Skipping malformed match data node (not enough elements)");
+            return null;
+        }
+
+        boolean isUpcomingMatch = "vs".equals(fixtureMatch.get(10).toString());
+        if (!isUpcomingMatch) {
+            return null;
+        }
+
+        String date = fixtureMatch.get(2).toString();
+        String competition = fixtureMatch.get(16).toString();
+        String homeTeam = fixtureMatch.get(5).toString();
+        String awayTeam = fixtureMatch.get(8).toString();
+
+        return new Match(date, competition, homeTeam, awayTeam);
     }
 }
