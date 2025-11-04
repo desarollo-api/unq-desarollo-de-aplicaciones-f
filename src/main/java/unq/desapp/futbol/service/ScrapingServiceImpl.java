@@ -296,8 +296,8 @@ public class ScrapingServiceImpl implements ScrapingService {
 
     private List<List<Object>> buildFixtureMatches(Matcher dataMatcher) throws IOException {
         String dataJson = dataMatcher.group(1)
+                .replace("'", "\"")
                 .replaceAll("([\\{,]\\s*)(\\w+)(\\s*:)", "$1\"$2\"$3")
-                .replaceAll("'", "\"")
                 .replaceAll(",\\s*,", ",\"\",")
                 .replaceAll(",\\s*]", "]");
 
