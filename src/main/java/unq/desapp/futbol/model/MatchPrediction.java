@@ -13,8 +13,6 @@ import lombok.NoArgsConstructor;
 public class MatchPrediction {
     private String homeTeam;
     private String awayTeam;
-    private TeamStats homeStats;
-    private TeamStats awayStats;
-    private List<HeadToHeadMatch> recentMeetings;
+    private List<PreviousMatch> recentMeetings;
     private String predictedResult;
 }
