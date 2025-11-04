@@ -24,8 +24,10 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
+import unq.desapp.futbol.model.MatchPrediction;
 import unq.desapp.futbol.model.UpcomingMatch;
 import unq.desapp.futbol.model.Player;
+import unq.desapp.futbol.model.PreviousMatch;
 import unq.desapp.futbol.model.Role;
 import unq.desapp.futbol.service.FootballDataService;
 import unq.desapp.futbol.model.User;
@@ -479,6 +481,83 @@ class TeamControllerTest {
                                                 assertThat(response.getBody()).isNull();
                                         })
                                         .verifyComplete();
+                }
+        }
+
+        @Nested
+        @DisplayName("predictNextMatch Tests")
+        class PredictNextMatchTests {
+
+                @Test
+                @DisplayName("should return OK with prediction when match is found")
+                void shouldReturnOkWithPredictionWhenMatchFound() {
+                        // Arrange
+                        String country = "Spain";
+                        String teamNameWithHyphens = "real-madrid";
+                        String expectedTeamName = "real madrid";
+
+                        List<PreviousMatch> previousMatches = Collections.singletonList(
+                                        new PreviousMatch("2024-01-01", "LaLiga", "Real Madrid", "2", "Barcelona",
+                                                        "1"));
+                        MatchPrediction expectedPrediction = new MatchPrediction(
+                                        "Real Madrid", "Atletico Madrid", previousMatches,
+                                        "Victory for Real Madrid");
+
+                        when(footballDataService.predictNextMatch(expectedTeamName, country, testUser))
+                                        .thenReturn(Mono.just(expectedPrediction));
+
+                        // Act
+                        Mono<ResponseEntity<MatchPrediction>> result = teamController.predictNextMatch(country,
+                                        teamNameWithHyphens, testUser);
+
+                        // Assert
+                        StepVerifier.create(result)
+                                        .assertNext(response -> {
+                                                assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+                                                assertThat(response.getBody()).isNotNull();
+                                                assertThat(response.getBody().getHomeTeam()).isEqualTo("Real Madrid");
+                                                assertThat(response.getBody().getPredictedResult())
+                                                                .isEqualTo("Victory for Real Madrid");
+                                        })
+                                        .verifyComplete();
+
+                        verify(footballDataService).predictNextMatch(expectedTeamName, country, testUser);
+                }
+
+                @Test
+                @DisplayName("should return NOT_FOUND when service returns empty Mono for prediction")
+                void shouldReturnNotFoundWhenServiceReturnsEmptyMonoForPrediction() {
+                        // Arrange
+                        String country = "Italy";
+                        String teamName = "inter";
+
+                        when(footballDataService.predictNextMatch(anyString(), anyString(), any(User.class)))
+                                        .thenReturn(Mono.empty());
+
+                        // Act
+                        Mono<ResponseEntity<MatchPrediction>> result = teamController.predictNextMatch(country,
+                                        teamName, testUser);
+
+                        // Assert
+                        StepVerifier.create(result)
+                                        .assertNext(response -> assertThat(response.getStatusCode())
+                                                        .isEqualTo(HttpStatus.NOT_FOUND))
+                                        .verifyComplete();
+                }
+
+                @Test
+                @DisplayName("should propagate error when service throws exception during prediction")
+                void shouldPropagateErrorWhenServiceThrowsExceptionDuringPrediction() {
+                        // Arrange
+                        String country = "Portugal";
+                        String teamName = "porto";
+                        when(footballDataService.predictNextMatch(anyString(), anyString(), any(User.class)))
+                                        .thenReturn(Mono.error(new RuntimeException("Prediction service failed")));
+
+                        // Act & Assert
+                        StepVerifier.create(teamController.predictNextMatch(country, teamName, testUser))
+                                        .expectError(RuntimeException.class)
+                                        .verify();
                 }
         }
 }
