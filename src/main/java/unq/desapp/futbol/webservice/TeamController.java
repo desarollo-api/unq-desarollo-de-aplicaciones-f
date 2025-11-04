@@ -13,7 +13,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import reactor.core.publisher.Mono;
-import unq.desapp.futbol.model.Match;
+import unq.desapp.futbol.model.UpcomingMatch;
 import unq.desapp.futbol.model.MatchPrediction;
 import unq.desapp.futbol.model.Player;
 import unq.desapp.futbol.model.User;
@@ -53,11 +53,11 @@ public class TeamController {
         @GetMapping("/{country}/{name}/matches")
         @Operation(summary = "Get Team Upcoming Matches", description = "Returns the upcoming matches for a given team. This action is recorded in the user's search history.")
         @ApiResponses(value = {
-                        @ApiResponse(responseCode = "200", description = "Successfully retrieved the upcoming matches", content = @Content(mediaType = "application/json", array = @ArraySchema(schema = @Schema(implementation = Match.class)))),
+                        @ApiResponse(responseCode = "200", description = "Successfully retrieved the upcoming matches", content = @Content(mediaType = "application/json", array = @ArraySchema(schema = @Schema(implementation = UpcomingMatch.class)))),
                         @ApiResponse(responseCode = "401", description = "Unauthorized - JWT token is missing or invalid", content = @Content),
                         @ApiResponse(responseCode = "404", description = "Team not found", content = @Content)
         })
-        public Mono<ResponseEntity<List<Match>>> getUpcomingMatches(
+        public Mono<ResponseEntity<List<UpcomingMatch>>> getUpcomingMatches(
                         @Parameter(description = "Country of the team", required = true, example = "England") @PathVariable String country,
                         @Parameter(description = "Name of the team, use hyphens for spaces", required = true, example = "manchester-united") @PathVariable String name,
                         @AuthenticationPrincipal User user) {

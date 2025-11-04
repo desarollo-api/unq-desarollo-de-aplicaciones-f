@@ -7,7 +7,7 @@ import lombok.NoArgsConstructor;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class Match {
+public class UpcomingMatch {
     private String date;
     private String competition;
     private String homeTeam;

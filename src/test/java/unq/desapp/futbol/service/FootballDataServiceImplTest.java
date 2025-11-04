@@ -6,7 +6,6 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -14,7 +13,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
-import unq.desapp.futbol.model.Match;
+import unq.desapp.futbol.model.UpcomingMatch;
 import unq.desapp.futbol.model.Player;
 import unq.desapp.futbol.model.Role;
 import unq.desapp.futbol.model.User;
@@ -121,10 +120,12 @@ class FootballDataServiceImplTest {
                 String teamName = "Boca Juniors";
                 String country = "Argentina";
 
-                Match match1 = new Match("2024-10-20", "Liga Profesional", "Boca Juniors", "River Plate");
-                Match match2 = new Match("2024-10-27", "Copa Argentina", "Independiente", "Boca Juniors");
-                Match match3 = new Match("2024-11-03", "Liga Profesional", "Boca Juniors", "Racing");
-                List<Match> expectedMatches = Arrays.asList(match1, match2, match3);
+                UpcomingMatch match1 = new UpcomingMatch("2024-10-20", "Liga Profesional", "Boca Juniors",
+                                "River Plate");
+                UpcomingMatch match2 = new UpcomingMatch("2024-10-27", "Copa Argentina", "Independiente",
+                                "Boca Juniors");
+                UpcomingMatch match3 = new UpcomingMatch("2024-11-03", "Liga Profesional", "Boca Juniors", "Racing");
+                List<UpcomingMatch> expectedMatches = Arrays.asList(match1, match2, match3);
 
                 ScrapingService scrapingService = mock(ScrapingService.class);
                 when(scrapingService.getUpcomingMatches(eq(teamName), eq(country)))
@@ -269,8 +270,9 @@ class FootballDataServiceImplTest {
                 String teamName = "Boca Juniors";
                 String country = "Argentina";
 
-                Match match = new Match("2024-10-20", "Liga Profesional", "Boca Juniors", "River Plate");
-                List<Match> expectedMatches = Collections.singletonList(match);
+                UpcomingMatch match = new UpcomingMatch("2024-10-20", "Liga Profesional", "Boca Juniors",
+                                "River Plate");
+                List<UpcomingMatch> expectedMatches = Collections.singletonList(match);
 
                 ScrapingService scrapingService = mock(ScrapingService.class);
                 when(scrapingService.getUpcomingMatches(eq(teamName), eq(country)))
@@ -332,8 +334,8 @@ class FootballDataServiceImplTest {
                 String teamName = "Test Team";
                 String country = "Test Country";
 
-                Match match = new Match("2024-10-20", null, "Home Team", "Away Team");
-                List<Match> expectedMatches = Collections.singletonList(match);
+                UpcomingMatch match = new UpcomingMatch("2024-10-20", null, "Home Team", "Away Team");
+                List<UpcomingMatch> expectedMatches = Collections.singletonList(match);
 
                 ScrapingService scrapingService = mock(ScrapingService.class);
                 when(scrapingService.getUpcomingMatches(eq(teamName), eq(country)))

@@ -24,7 +24,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
-import unq.desapp.futbol.model.Match;
+import unq.desapp.futbol.model.UpcomingMatch;
 import unq.desapp.futbol.model.Player;
 import unq.desapp.futbol.model.Role;
 import unq.desapp.futbol.service.FootballDataService;
@@ -430,15 +430,17 @@ class TeamControllerTest {
                         String teamNameWithHyphens = "manchester-united";
                         String expectedTeamName = "manchester united";
 
-                        List<Match> expectedMatches = Arrays.asList(
-                                        new Match("2025-10-18", "Premier League", "Manchester United", "Chelsea"),
-                                        new Match("2025-10-25", "Premier League", "Arsenal", "Manchester United"));
+                        List<UpcomingMatch> expectedMatches = Arrays.asList(
+                                        new UpcomingMatch("2025-10-18", "Premier League", "Manchester United",
+                                                        "Chelsea"),
+                                        new UpcomingMatch("2025-10-25", "Premier League", "Arsenal",
+                                                        "Manchester United"));
 
                         when(footballDataService.getUpcomingMatches(expectedTeamName, country, testUser))
                                         .thenReturn(Mono.just(expectedMatches));
 
                         // Act
-                        Mono<ResponseEntity<List<Match>>> result = teamController.getUpcomingMatches(country,
+                        Mono<ResponseEntity<List<UpcomingMatch>>> result = teamController.getUpcomingMatches(country,
                                         teamNameWithHyphens, testUser);
 
                         // Assert
@@ -466,7 +468,8 @@ class TeamControllerTest {
                                         .thenReturn(Mono.empty());
 
                         // Act
-                        Mono<ResponseEntity<List<Match>>> result = teamController.getUpcomingMatches(country, teamName,
+                        Mono<ResponseEntity<List<UpcomingMatch>>> result = teamController.getUpcomingMatches(country,
+                                        teamName,
                                         testUser);
 
                         // Assert
