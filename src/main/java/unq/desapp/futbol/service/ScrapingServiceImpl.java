@@ -13,7 +13,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
-import unq.desapp.futbol.model.Match;
+import unq.desapp.futbol.model.UpcomingMatch;
 import unq.desapp.futbol.model.MatchPrediction;
 import unq.desapp.futbol.model.Player;
 import unq.desapp.futbol.model.PlayerPerformance;
@@ -23,11 +23,13 @@ import java.io.IOException;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 @Service
 public class ScrapingServiceImpl implements ScrapingService {
@@ -232,7 +234,7 @@ public class ScrapingServiceImpl implements ScrapingService {
 
     // UPCOMING MATCHES
 
-    public Mono<List<Match>> getUpcomingMatches(String teamName, String country) {
+    public Mono<List<UpcomingMatch>> getUpcomingMatches(String teamName, String country) {
         return Mono.fromCallable(() -> scrapeUpcomingMatches(teamName, country))
                 .subscribeOn(Schedulers.boundedElastic())
                 .onErrorResume(e -> {
@@ -241,12 +243,12 @@ public class ScrapingServiceImpl implements ScrapingService {
                 });
     }
 
-    private List<Match> scrapeUpcomingMatches(String teamName, String country) throws IOException {
+    private List<UpcomingMatch> scrapeUpcomingMatches(String teamName, String country) throws IOException {
         List<List<Object>> fixtureMatches = buildFixtureMatches(teamName, country);
-        List<Match> upcomingMatches = new ArrayList<>();
+        List<UpcomingMatch> upcomingMatches = new ArrayList<>();
 
         for (List<Object> fixtureMatch : fixtureMatches) {
-            Match upcomingMatch = buildUpcomingMatch(fixtureMatch);
+            UpcomingMatch upcomingMatch = buildUpcomingMatch(fixtureMatch);
 
             if (upcomingMatch != null) {
                 upcomingMatches.add(upcomingMatch);
@@ -308,7 +310,7 @@ public class ScrapingServiceImpl implements ScrapingService {
                 : Collections.emptyList();
     }
 
-    private Match buildUpcomingMatch(List<Object> fixtureMatch) {
+    private UpcomingMatch buildUpcomingMatch(List<Object> fixtureMatch) {
         boolean hasEnoughMatchData = fixtureMatch.size() >= 17;
         if (!hasEnoughMatchData) {
             logger.warn("Skipping malformed match data node (not enough elements)");
@@ -325,7 +327,7 @@ public class ScrapingServiceImpl implements ScrapingService {
         String homeTeam = fixtureMatch.get(5).toString();
         String awayTeam = fixtureMatch.get(8).toString();
 
-        return new Match(date, competition, homeTeam, awayTeam);
+        return new UpcomingMatch(date, competition, homeTeam, awayTeam);
     }
 
     // UPCOMING MATCHPREDICTION
@@ -342,161 +344,141 @@ public class ScrapingServiceImpl implements ScrapingService {
 
     private MatchPrediction buildMatchPrediction(String teamName, String country) throws IOException {
         List<List<Object>> fixtureMatches = buildFixtureMatches(teamName, country);
-
-        if (fixtureMatches.isEmpty()) {
-            logger.warn("No matches found for team '{}'", teamName);
+        if (fixtureMatches.isEmpty())
             return null;
-        }
 
         List<List<Object>> upcomingMatches = buildUpcomingMatches(fixtureMatches);
-        if (upcomingMatches.isEmpty()) {
-            logger.warn("No upcoming matches found for team '{}'", teamName);
+        if (upcomingMatches.isEmpty())
             return null;
-        }
 
         List<Object> upcomingMatch = upcomingMatches.get(0);
         String matchId = upcomingMatch.get(0).toString();
         String homeTeam = upcomingMatch.get(5).toString();
         String awayTeam = upcomingMatch.get(8).toString();
 
-        if (!StringUtils.hasText(matchId)) {
-            logger.warn("No matchId found for upcoming match for team '{}'", teamName);
+        if (!StringUtils.hasText(matchId))
             return null;
-        }
 
         String matchUrl = "https://www.whoscored.com/matches/" + matchId + "/show";
-        logger.info("✅ Match page to scrape: {}", matchUrl);
+        logger.info("🔍 Scraping match page: {}", matchUrl);
 
+        JsonNode rootNode = extractMatchJson(matchUrl);
+        if (rootNode == null)
+            return null;
+
+        List<PreviousMatch> previousMatches = buildPreviousMatches(
+                objectMapper.convertValue(rootNode.path("previousMeetings"), new TypeReference<List<List<Object>>>() {
+                }));
+        List<PreviousMatch> homeMatches = buildPreviousMatchesV2(
+                objectMapper.convertValue(rootNode.path("homeMatches").get(0), new TypeReference<List<List<Object>>>() {
+                }));
+
+        List<PreviousMatch> awayMatches = buildPreviousMatchesV2(
+                objectMapper.convertValue(rootNode.path("awayMatches").get(0), new TypeReference<List<List<Object>>>() {
+                }));
+
+        boolean isHomeTeam = homeTeam.equalsIgnoreCase(teamName);
+        String currentTeam = isHomeTeam ? homeTeam : awayTeam;
+
+        int currentPoints = 0;
+        int opponentPoints = 0;
+
+        currentPoints += evaluatePrediction(previousMatches, currentTeam, true);
+        opponentPoints += evaluatePrediction(previousMatches, currentTeam, false);
+
+        currentPoints += evaluateTeamPrediction(homeMatches, homeTeam, isHomeTeam, true);
+        opponentPoints += evaluateTeamPrediction(homeMatches, homeTeam, isHomeTeam, false);
+
+        currentPoints += evaluateTeamPrediction(awayMatches, awayTeam, !isHomeTeam, true);
+        opponentPoints += evaluateTeamPrediction(awayMatches, awayTeam, !isHomeTeam, false);
+
+        String finalPrediction = computeFinalPrediction(currentPoints, opponentPoints, currentTeam);
+
+        List<PreviousMatch> combinedMeetings = Stream.of(previousMatches, homeMatches, awayMatches)
+                .flatMap(Collection::stream)
+                .distinct()
+                .limit(5)
+                .collect(Collectors.toList());
+
+        return new MatchPrediction(homeTeam, awayTeam, combinedMeetings, finalPrediction);
+    }
+
+    private JsonNode extractMatchJson(String matchUrl) throws IOException {
         Document matchPage = Jsoup.connect(matchUrl)
                 .userAgent(USER_AGENT)
                 .timeout(15000)
                 .get();
 
-        Elements matchScripts = matchPage.getElementsByTag("script");
-        String matchScript = matchScripts.stream()
+        String script = matchPage.getElementsByTag("script").stream()
                 .map(Element::data)
                 .filter(s -> s.contains("require.config.params[\"args\"]"))
                 .findFirst()
                 .orElse(null);
 
-        if (matchScript == null) {
-            logger.warn("Could not find match data script on page: {}", matchUrl);
+        if (script == null) {
+            logger.warn("No match data script found at {}", matchUrl);
             return null;
         }
 
-        Matcher dataMatcher = Pattern
-                .compile("require\\.config\\.params\\[\"args\"]\\s+=\\s+(\\{.*\\})", Pattern.DOTALL)
-                .matcher(matchScript);
+        Matcher matcher = Pattern.compile("require\\.config\\.params\\[\"args\"]\\s+=\\s+(\\{.*\\})", Pattern.DOTALL)
+                .matcher(script);
 
-        if (!dataMatcher.find()) {
-            logger.warn("Could not find match data on page: {}", matchUrl);
+        if (!matcher.find())
             return null;
-        }
 
-        String clarifierRegex = "(?s)showLeagueTableStandings.*?homeMatches";
-        String clarifierValue = "homeMatches";
-        String dataJson = dataMatcher.group(1)
-                .replaceFirst(clarifierRegex, clarifierValue)
+        String json = matcher.group(1)
+                .replaceFirst("(?s)showLeagueTableStandings.*?homeMatches", "homeMatches")
                 .replace("'", "\"")
                 .replaceAll("([\\{,]\\s*)(\\w+)(\\s*:)", "$1\"$2\"$3")
                 .replaceAll(",\\s*,", ",\"\",")
                 .replaceAll(",\\s*]", "]")
                 .replaceAll(",\\s*}", "}");
 
-        JsonNode rootNode = objectMapper.readTree(dataJson);
-        JsonNode previousMeetingsNode = rootNode.path("previousMeetings");
-        JsonNode homeMatchesNode = rootNode.path("homeMatches");
-        JsonNode awayMatchesNode = rootNode.path("awayMatches");
+        return objectMapper.readTree(json);
+    }
 
-        // 🔹 Parseo de los encuentros previos
-        List<List<Object>> previousMeetings = previousMeetingsNode.isArray()
-                ? objectMapper.convertValue(previousMeetingsNode, new TypeReference<List<List<Object>>>() {
-                })
-                : Collections.emptyList();
+    private JsonNode getNodeArray(JsonNode root, String field) {
+        JsonNode node = root.path(field);
+        return node.isArray() ? node : objectMapper.createArrayNode();
+    }
 
-        List<PreviousMatch> previousMatches = buildPreviousMatches(previousMeetings);
+    private List<List<Object>> getNestedNodeArray(JsonNode root, String field) {
+        JsonNode node = root.path(field);
+        if (!node.isArray())
+            return Collections.emptyList();
 
-        // 🔹 Extraer los partidos recientes de local y visitante
-        List<List<List<Object>>> homeMatches = homeMatchesNode.isArray()
-                ? objectMapper.convertValue(homeMatchesNode, new TypeReference<List<List<List<Object>>>>() {
-                })
-                : Collections.emptyList();
+        List<List<List<Object>>> nested = objectMapper.convertValue(
+                node, new TypeReference<List<List<List<Object>>>>() {
+                });
+        return nested.isEmpty() ? Collections.emptyList() : nested.get(0);
+    }
 
-        List<List<List<Object>>> awayMatches = awayMatchesNode.isArray()
-                ? objectMapper.convertValue(awayMatchesNode, new TypeReference<List<List<List<Object>>>>() {
-                })
-                : Collections.emptyList();
+    private int evaluatePrediction(List<PreviousMatch> matches, String team, boolean forTeam) {
+        String prediction = getPrediction(matches, team);
+        return prediction.contains(forTeam ? "Victory" : "Defeat") ? 1 : 0;
+    }
 
-        List<PreviousMatch> mappedPreviousHomeMatches = homeMatches.isEmpty()
-                ? Collections.emptyList()
-                : buildPreviousMatchesV2(homeMatches.get(0));
+    private int evaluateTeamPrediction(List<PreviousMatch> matches, String team, boolean isTeam, boolean forTeam) {
+        String prediction = getPrediction(matches, team);
+        boolean condition = isTeam
+                ? prediction.contains(forTeam ? "Victory" : "Defeat")
+                : prediction.contains(forTeam ? "Defeat" : "Victory");
+        return condition ? 1 : 0;
+    }
 
-        List<PreviousMatch> mappedPreviousAwayMatches = awayMatches.isEmpty()
-                ? Collections.emptyList()
-                : buildPreviousMatchesV2(awayMatches.get(0));
-
-        boolean currentTeamIsHomeTeam = homeTeam.equalsIgnoreCase(teamName);
-        String currentTeam = currentTeamIsHomeTeam ? homeTeam : awayTeam;
-        int currentTeamPredictionPoints = 0;
-        int opponentTeamPredictionPoints = 0;
-
-        String historyPrediction = getPrediction(previousMatches, currentTeam);
-        if (historyPrediction.contains("Victory"))
-            currentTeamPredictionPoints++;
-        if (historyPrediction.contains("Defeat"))
-            opponentTeamPredictionPoints++;
-
-        String homePrediction = getPrediction(mappedPreviousHomeMatches, homeTeam);
-        if (currentTeamIsHomeTeam && homePrediction.contains("Victory")
-                || !currentTeamIsHomeTeam && homePrediction.contains("Defeat")) {
-            currentTeamPredictionPoints++;
-        }
-        if (currentTeamIsHomeTeam && homePrediction.contains("Defeat")
-                || !currentTeamIsHomeTeam && homePrediction.contains("Victory")) {
-            opponentTeamPredictionPoints++;
-        }
-
-        String awayPrediction = getPrediction(mappedPreviousAwayMatches, awayTeam);
-        if (!currentTeamIsHomeTeam && awayPrediction.contains("Victory")
-                || currentTeamIsHomeTeam && awayPrediction.contains("Defeat")) {
-            currentTeamPredictionPoints++;
-        }
-        if (!currentTeamIsHomeTeam && awayPrediction.contains("Defeat")
-                || currentTeamIsHomeTeam && awayPrediction.contains("Victory")) {
-            opponentTeamPredictionPoints++;
-        }
-
-        String finalPrediction;
-        if (currentTeamPredictionPoints == opponentTeamPredictionPoints) {
-            finalPrediction = "Draw";
-        } else if (currentTeamPredictionPoints < opponentTeamPredictionPoints) {
-            finalPrediction = String.format("Defeat for %s", currentTeam);
-        } else {
-            finalPrediction = String.format("Victory for %s", currentTeam);
-        }
-
-        // 🔹 Combinar todas las fuentes de partidos previos
-        List<PreviousMatch> combinedMeetings = new ArrayList<>();
-        combinedMeetings.addAll(previousMatches);
-        combinedMeetings.addAll(mappedPreviousHomeMatches);
-        combinedMeetings.addAll(mappedPreviousAwayMatches);
-
-        // 🔹 Quitar duplicados y limitar a los 5 más recientes
-        List<PreviousMatch> uniqueRecentMeetings = combinedMeetings.stream()
-                .distinct()
-                .limit(5)
-                .collect(Collectors.toList());
-
-        return new MatchPrediction(homeTeam, awayTeam, uniqueRecentMeetings, finalPrediction);
+    private String computeFinalPrediction(int currentPoints, int opponentPoints, String team) {
+        if (currentPoints == opponentPoints)
+            return "Draw";
+        return currentPoints > opponentPoints
+                ? String.format("Victory for %s", team)
+                : String.format("Defeat for %s", team);
     }
 
     private String getPrediction(List<PreviousMatch> matches, String teamName) {
-        if (matches == null || matches.isEmpty()) {
+        if (matches == null || matches.isEmpty())
             return "Cannot predict match outcome";
-        }
 
-        int targetWins = 0;
-        int opponentWins = 0;
+        int teamWins = 0, opponentWins = 0;
 
         for (PreviousMatch match : matches) {
             try {
@@ -504,37 +486,32 @@ public class ScrapingServiceImpl implements ScrapingService {
                 int awayScore = Integer.parseInt(match.getAwayScore());
 
                 if (homeScore > awayScore) {
-                    if (match.getHomeTeam().equals(teamName)) {
-                        targetWins++;
-                    } else {
+                    if (match.getHomeTeam().equalsIgnoreCase(teamName))
+                        teamWins++;
+                    else
                         opponentWins++;
-                    }
                 } else if (awayScore > homeScore) {
-                    if (match.getAwayTeam().equals(teamName)) {
-                        targetWins++;
-                    } else {
+                    if (match.getAwayTeam().equalsIgnoreCase(teamName))
+                        teamWins++;
+                    else
                         opponentWins++;
-                    }
                 }
-            } catch (NumberFormatException e) {
-                continue;
+            } catch (NumberFormatException ignored) {
             }
         }
 
-        if (targetWins > opponentWins) {
-            return String.format("Victory for %s", teamName);
-        }
-
-        if (opponentWins > targetWins) {
-            return String.format("Defeat for %s", teamName);
-        }
-
+        if (teamWins > opponentWins)
+            return "Victory for " + teamName;
+        if (opponentWins > teamWins)
+            return "Defeat for " + teamName;
         return "Draw";
     }
 
     private List<PreviousMatch> buildPreviousMatches(List<List<Object>> previousMeetings) {
         return previousMeetings.stream()
                 .map(m -> new PreviousMatch(
+                        m.get(2).toString(),
+                        m.get(16).toString(),
                         m.get(5).toString(),
                         m.get(33).toString(),
                         m.get(8).toString(),
@@ -545,6 +522,8 @@ public class ScrapingServiceImpl implements ScrapingService {
     private List<PreviousMatch> buildPreviousMatchesV2(List<List<Object>> previousMeetings) {
         return previousMeetings.stream()
                 .map(m -> new PreviousMatch(
+                        m.get(2).toString(),
+                        m.get(16).toString(),
                         m.get(5).toString(),
                         m.get(31).toString(),
                         m.get(8).toString(),

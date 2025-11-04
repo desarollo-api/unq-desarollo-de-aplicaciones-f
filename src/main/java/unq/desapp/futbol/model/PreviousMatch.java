@@ -8,6 +8,8 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 public class PreviousMatch {
+    private String date;
+    private String competition;
     private String homeTeam;
     private String homeScore;
     private String awayTeam;
