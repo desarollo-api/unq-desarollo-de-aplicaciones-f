@@ -2,6 +2,7 @@ package unq.desapp.futbol.service;
 
 import reactor.core.publisher.Mono;
 import unq.desapp.futbol.model.Match;
+import unq.desapp.futbol.model.MatchPrediction;
 import unq.desapp.futbol.model.Player;
 import unq.desapp.futbol.model.PlayerPerformance;
 import unq.desapp.futbol.model.User;
@@ -14,4 +15,6 @@ public interface FootballDataService {
     Mono<List<Player>> getTeamSquad(String teamName, String country, User user);
 
     Mono<PlayerPerformance> getPlayerPerformance(String playerName, User user);
+
+    Mono<MatchPrediction> predictNextMatch(String teamName, String country, User user);
 }

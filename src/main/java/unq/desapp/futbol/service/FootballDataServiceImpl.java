@@ -4,6 +4,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Mono;
 import unq.desapp.futbol.model.Match;
+import unq.desapp.futbol.model.MatchPrediction;
 import unq.desapp.futbol.model.Player;
 import unq.desapp.futbol.model.SearchType;
 import unq.desapp.futbol.model.User;
@@ -48,5 +49,10 @@ public class FootballDataServiceImpl implements FootballDataService {
                         user.addSearchHistory(SearchType.TEAM, teamName + " (" + country + ")");
                     }
                 });
+    }
+
+    @Override
+    public Mono<MatchPrediction> predictNextMatch(String teamName, String country, User user) {
+        return scrapingService.predictNextMatch(teamName, country);
     }
 }
