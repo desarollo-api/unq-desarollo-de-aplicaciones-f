@@ -1,7 +1,6 @@
 package unq.desapp.futbol.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -40,7 +39,7 @@ class FootballDataServiceImplTest {
                 List<Player> expectedPlayers = List.of(player1, player2, player3);
 
                 ScrapingService scrapingService = mock(ScrapingService.class);
-                when(scrapingService.getTeamSquad(eq(teamName), eq(country)))
+                when(scrapingService.getTeamSquad(teamName, country))
                                 .thenReturn(Mono.just(expectedPlayers));
 
                 FootballDataServiceImpl footballDataService = new FootballDataServiceImpl(
@@ -61,7 +60,7 @@ class FootballDataServiceImplTest {
                                 })
                                 .verifyComplete();
 
-                verify(scrapingService, times(1)).getTeamSquad(eq(teamName), eq(country));
+                verify(scrapingService, times(1)).getTeamSquad(teamName, country);
         }
 
         @Test
@@ -71,7 +70,7 @@ class FootballDataServiceImplTest {
                 String country = "Argentina";
 
                 ScrapingService scrapingService = mock(ScrapingService.class);
-                when(scrapingService.getTeamSquad(eq(teamName), eq(country)))
+                when(scrapingService.getTeamSquad(teamName, country))
                                 .thenReturn(Mono.just(Collections.emptyList()));
 
                 FootballDataServiceImpl footballDataService = new FootballDataServiceImpl(
@@ -87,7 +86,7 @@ class FootballDataServiceImplTest {
                                 })
                                 .verifyComplete();
 
-                verify(scrapingService, times(1)).getTeamSquad(eq(teamName), eq(country));
+                verify(scrapingService, times(1)).getTeamSquad(teamName, country);
         }
 
         @Test
@@ -98,7 +97,7 @@ class FootballDataServiceImplTest {
                 RuntimeException expectedException = new RuntimeException("Scraping service error");
 
                 ScrapingService scrapingService = mock(ScrapingService.class);
-                when(scrapingService.getTeamSquad(eq(teamName), eq(country)))
+                when(scrapingService.getTeamSquad(teamName, country))
                                 .thenReturn(Mono.error(expectedException));
 
                 FootballDataServiceImpl footballDataService = new FootballDataServiceImpl(
@@ -112,7 +111,7 @@ class FootballDataServiceImplTest {
                                                 error.getMessage().equals("Scraping service error"))
                                 .verify();
 
-                verify(scrapingService, times(1)).getTeamSquad(eq(teamName), eq(country));
+                verify(scrapingService, times(1)).getTeamSquad(teamName, country);
         }
 
         @Test
@@ -127,7 +126,7 @@ class FootballDataServiceImplTest {
                 List<Match> expectedMatches = Arrays.asList(match1, match2, match3);
 
                 ScrapingService scrapingService = mock(ScrapingService.class);
-                when(scrapingService.getUpcomingMatches(eq(teamName), eq(country)))
+                when(scrapingService.getUpcomingMatches(teamName, country))
                                 .thenReturn(Mono.just(expectedMatches));
 
                 FootballDataServiceImpl footballDataService = new FootballDataServiceImpl(
@@ -148,7 +147,7 @@ class FootballDataServiceImplTest {
                                 })
                                 .verifyComplete();
 
-                verify(scrapingService, times(1)).getUpcomingMatches(eq(teamName), eq(country));
+                verify(scrapingService, times(1)).getUpcomingMatches(teamName, country);
         }
 
         @Test
@@ -158,7 +157,7 @@ class FootballDataServiceImplTest {
                 String country = "Argentina";
 
                 ScrapingService scrapingService = mock(ScrapingService.class);
-                when(scrapingService.getUpcomingMatches(eq(teamName), eq(country)))
+                when(scrapingService.getUpcomingMatches(teamName, country))
                                 .thenReturn(Mono.just(Collections.emptyList()));
 
                 FootballDataServiceImpl footballDataService = new FootballDataServiceImpl(
@@ -174,7 +173,7 @@ class FootballDataServiceImplTest {
                                 })
                                 .verifyComplete();
 
-                verify(scrapingService, times(1)).getUpcomingMatches(eq(teamName), eq(country));
+                verify(scrapingService, times(1)).getUpcomingMatches(teamName, country);
         }
 
         @Test
@@ -185,7 +184,7 @@ class FootballDataServiceImplTest {
                 RuntimeException expectedException = new RuntimeException("Network error");
 
                 ScrapingService scrapingService = mock(ScrapingService.class);
-                when(scrapingService.getUpcomingMatches(eq(teamName), eq(country)))
+                when(scrapingService.getUpcomingMatches(teamName, country))
                                 .thenReturn(Mono.error(expectedException));
 
                 FootballDataServiceImpl footballDataService = new FootballDataServiceImpl(
@@ -199,7 +198,7 @@ class FootballDataServiceImplTest {
                                                 error.getMessage().equals("Network error"))
                                 .verify();
 
-                verify(scrapingService, times(1)).getUpcomingMatches(eq(teamName), eq(country));
+                verify(scrapingService, times(1)).getUpcomingMatches(teamName, country);
         }
 
         @Test
@@ -212,7 +211,7 @@ class FootballDataServiceImplTest {
                 List<Player> expectedPlayers = Collections.singletonList(player);
 
                 ScrapingService scrapingService = mock(ScrapingService.class);
-                when(scrapingService.getTeamSquad(eq(teamName), eq(country)))
+                when(scrapingService.getTeamSquad(teamName, country))
                                 .thenReturn(Mono.just(expectedPlayers));
 
                 FootballDataServiceImpl footballDataService = new FootballDataServiceImpl(
@@ -229,7 +228,7 @@ class FootballDataServiceImplTest {
                                 })
                                 .verifyComplete();
 
-                verify(scrapingService, times(1)).getTeamSquad(eq(teamName), eq(country));
+                verify(scrapingService, times(1)).getTeamSquad(teamName, country);
         }
 
         @Test
@@ -242,7 +241,7 @@ class FootballDataServiceImplTest {
                 List<Player> expectedPlayers = Collections.singletonList(player);
 
                 ScrapingService scrapingService = mock(ScrapingService.class);
-                when(scrapingService.getTeamSquad(eq(teamName), eq(country)))
+                when(scrapingService.getTeamSquad(teamName, country))
                                 .thenReturn(Mono.just(expectedPlayers));
 
                 FootballDataServiceImpl footballDataService = new FootballDataServiceImpl(
@@ -260,7 +259,7 @@ class FootballDataServiceImplTest {
                                 .expectNextMatches(players -> players.size() == 1)
                                 .verifyComplete();
 
-                verify(scrapingService, times(2)).getTeamSquad(eq(teamName), eq(country));
+                verify(scrapingService, times(2)).getTeamSquad(teamName, country);
         }
 
         @Test
@@ -273,7 +272,7 @@ class FootballDataServiceImplTest {
                 List<Match> expectedMatches = Collections.singletonList(match);
 
                 ScrapingService scrapingService = mock(ScrapingService.class);
-                when(scrapingService.getUpcomingMatches(eq(teamName), eq(country)))
+                when(scrapingService.getUpcomingMatches(teamName, country))
                                 .thenReturn(Mono.just(expectedMatches));
 
                 FootballDataServiceImpl footballDataService = new FootballDataServiceImpl(
@@ -291,7 +290,7 @@ class FootballDataServiceImplTest {
                                 .expectNextMatches(matches -> matches.size() == 1)
                                 .verifyComplete();
 
-                verify(scrapingService, times(2)).getUpcomingMatches(eq(teamName), eq(country));
+                verify(scrapingService, times(2)).getUpcomingMatches(teamName, country);
         }
 
         @Test
@@ -304,7 +303,7 @@ class FootballDataServiceImplTest {
                 List<Player> expectedPlayers = Collections.singletonList(player);
 
                 ScrapingService scrapingService = mock(ScrapingService.class);
-                when(scrapingService.getTeamSquad(eq(teamName), eq(country)))
+                when(scrapingService.getTeamSquad(teamName, country))
                                 .thenReturn(Mono.just(expectedPlayers));
 
                 FootballDataServiceImpl footballDataService = new FootballDataServiceImpl(
@@ -323,7 +322,7 @@ class FootballDataServiceImplTest {
                                 })
                                 .verifyComplete();
 
-                verify(scrapingService, times(1)).getTeamSquad(eq(teamName), eq(country));
+                verify(scrapingService, times(1)).getTeamSquad(teamName, country);
         }
 
         @Test
@@ -336,7 +335,7 @@ class FootballDataServiceImplTest {
                 List<Match> expectedMatches = Collections.singletonList(match);
 
                 ScrapingService scrapingService = mock(ScrapingService.class);
-                when(scrapingService.getUpcomingMatches(eq(teamName), eq(country)))
+                when(scrapingService.getUpcomingMatches(teamName, country))
                                 .thenReturn(Mono.just(expectedMatches));
 
                 FootballDataServiceImpl footballDataService = new FootballDataServiceImpl(
@@ -354,6 +353,6 @@ class FootballDataServiceImplTest {
                                 })
                                 .verifyComplete();
 
-                verify(scrapingService, times(1)).getUpcomingMatches(eq(teamName), eq(country));
+                verify(scrapingService, times(1)).getUpcomingMatches(teamName, country);
         }
 }
