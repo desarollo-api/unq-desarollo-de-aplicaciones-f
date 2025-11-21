@@ -1,0 +1,31 @@
+{
+    "playerTableStats": [
+        {
+            "seasonName": "2023/2024",
+            "teamName": "Inter Miami",
+            "tournamentName": "MLS",
+            "apps": 30,
+            "goal": 25,
+            "assistTotal": 15,
+            "rating": 8.5
+        },
+        {
+            "seasonName": "2022/2023",
+            "teamName": "PSG",
+            "tournamentName": "Ligue 1",
+            "apps": 35,
+            "goal": 20,
+            "assistTotal": 18,
+            "rating": 8.2
+        },
+        {
+            "seasonName": "2021/2022",
+            "teamName": "PSG",
+            "tournamentName": "Ligue 1",
+            "apps": 33,
+            "goal": 15,
+            "assistTotal": 14,
+            "rating": 7.9
+        }
+    ]
+}

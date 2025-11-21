@@ -9,6 +9,7 @@ import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 import reactor.core.publisher.Mono;
@@ -35,12 +36,15 @@ import java.util.stream.Stream;
 public class ScrapingServiceImpl implements ScrapingService {
 
     private static final Logger logger = LoggerFactory.getLogger(ScrapingServiceImpl.class);
-    private static final String WHOSCORED_BASE_URL = "https://www.whoscored.com";
-    private static final String SEARCH_URL_TEMPLATE = WHOSCORED_BASE_URL + "/search/?t=%s";
     private static final String USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/108.0.0.0 Safari/537.36";
     private static final String HEADER_ACCEPT = "Accept";
 
     private final ObjectMapper objectMapper = new ObjectMapper();
+    private final String baseUrl;
+
+    public ScrapingServiceImpl(@Value("${whoscored.base-url}") String baseUrl) {
+        this.baseUrl = baseUrl;
+    }
 
     // TEAM SQUAD
 
@@ -58,7 +62,7 @@ public class ScrapingServiceImpl implements ScrapingService {
         String teamPageUrl = searchTeam(teamName, country);
         int teamId = extractTeamId(teamPageUrl);
 
-        String apiUrl = "https://www.whoscored.com/statisticsfeed/1/getplayerstatistics" +
+        String apiUrl = baseUrl + "/statisticsfeed/1/getplayerstatistics" +
                 "?category=summary&subcategory=all&statsAccumulationType=0&isCurrent=true" +
                 "&playerId=&teamIds=" + teamId +
                 "&matchId=&stageId=&tournamentOptions=67&sortBy=Rating&includeZeroValues=true&incPens=";
@@ -103,13 +107,13 @@ public class ScrapingServiceImpl implements ScrapingService {
 
     private String searchTeam(String teamName, String country) throws IOException {
         String encodedName = URLEncoder.encode(teamName, StandardCharsets.UTF_8.name()).replace("+", "%20");
-        String searchUrl = String.format(SEARCH_URL_TEMPLATE, encodedName);
+        String searchUrl = baseUrl + "/search/?t=" + encodedName;
 
         logger.info("Searching team '{}' at URL: {}", teamName, searchUrl);
 
         Document searchResultPage = Jsoup.connect(searchUrl)
                 .userAgent(USER_AGENT)
-                .referrer("https://www.whoscored.com/")
+                .referrer(baseUrl + "/")
                 .header("Accept-Language", "en-US,en;q=0.9")
                 .header(HEADER_ACCEPT, "text/html")
                 .get();
@@ -123,7 +127,7 @@ public class ScrapingServiceImpl implements ScrapingService {
                 if (country.equalsIgnoreCase(rowCountry)) {
                     Element link = cells.get(0).selectFirst("a");
                     if (link != null) {
-                        String foundUrl = WHOSCORED_BASE_URL + link.attr("href");
+                        String foundUrl = baseUrl + link.attr("href");
                         logger.info("Found team '{}' ({}) → {}", teamName, country, foundUrl);
                         return foundUrl;
                     }
@@ -159,7 +163,7 @@ public class ScrapingServiceImpl implements ScrapingService {
         String playerPageUrl = searchPlayer(playerName);
         int playerId = extractPlayerId(playerPageUrl);
 
-        String apiUrl = "https://www.whoscored.com/statisticsfeed/1/getplayerstatistics" +
+        String apiUrl = baseUrl + "/statisticsfeed/1/getplayerstatistics" +
                 "?category=summary&subcategory=all&statsAccumulationType=0&isCurrent=false" +
                 "&playerId=" + playerId +
                 "&includeZeroValues=true&incPens=";
@@ -201,13 +205,13 @@ public class ScrapingServiceImpl implements ScrapingService {
 
     private String searchPlayer(String playerName) throws IOException {
         String encodedName = URLEncoder.encode(playerName, StandardCharsets.UTF_8.name()).replace("+", "%20");
-        String searchUrl = String.format(SEARCH_URL_TEMPLATE, encodedName);
+        String searchUrl = baseUrl + "/search/?t=" + encodedName;
 
         logger.info("Searching player '{}' at URL: {}", playerName, searchUrl);
 
         Document searchResultPage = Jsoup.connect(searchUrl)
                 .userAgent(USER_AGENT)
-                .referrer("https://www.whoscored.com/")
+                .referrer(baseUrl + "/")
                 .header("Accept-Language", "en-US,en;q=0.9")
                 .header(HEADER_ACCEPT, "text/html")
                 .get();
@@ -215,7 +219,7 @@ public class ScrapingServiceImpl implements ScrapingService {
         Element playerLink = searchResultPage.selectFirst(".search-result a[href^='/Players/']");
 
         if (playerLink != null) {
-            String foundUrl = WHOSCORED_BASE_URL + playerLink.attr("href");
+            String foundUrl = baseUrl + playerLink.attr("href");
             logger.info("Found player '{}' → {}", playerName, foundUrl);
             return foundUrl;
         }
@@ -224,7 +228,7 @@ public class ScrapingServiceImpl implements ScrapingService {
     }
 
     private int extractPlayerId(String playerUrl) {
-        Matcher m = Pattern.compile("/players/(\\d+)/").matcher(playerUrl);
+        Matcher m = Pattern.compile("/[Pp]layers/(\\d+)/").matcher(playerUrl);
         if (m.find()) {
             return Integer.parseInt(m.group(1));
         } else {
@@ -359,7 +363,7 @@ public class ScrapingServiceImpl implements ScrapingService {
         if (!StringUtils.hasText(matchId))
             return null;
 
-        String matchUrl = "https://www.whoscored.com/matches/" + matchId + "/show";
+        String matchUrl = baseUrl + "/matches/" + matchId + "/show";
         logger.info("🔍 Scraping match page: {}", matchUrl);
 
         JsonNode rootNode = extractMatchJson(matchUrl);
