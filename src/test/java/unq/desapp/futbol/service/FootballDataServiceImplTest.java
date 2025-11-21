@@ -5,6 +5,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -12,9 +13,13 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
-import unq.desapp.futbol.model.UpcomingMatch;
+import unq.desapp.futbol.model.MatchPrediction;
 import unq.desapp.futbol.model.Player;
+import unq.desapp.futbol.model.PlayerPerformance;
+import unq.desapp.futbol.model.PreviousMatch;
 import unq.desapp.futbol.model.Role;
+import unq.desapp.futbol.model.SeasonPerformance;
+import unq.desapp.futbol.model.UpcomingMatch;
 import unq.desapp.futbol.model.User;
 
 class FootballDataServiceImplTest {
@@ -356,5 +361,237 @@ class FootballDataServiceImplTest {
                                 .verifyComplete();
 
                 verify(scrapingService, times(1)).getUpcomingMatches(teamName, country);
+        }
+
+        // Tests for getPlayerPerformance method
+
+        @Test
+        void shouldReturnPlayerPerformanceWhenScrapingServiceReturnsData() {
+                // Arrange
+                String playerName = "Lionel Messi";
+
+                SeasonPerformance season1 = new SeasonPerformance("2023/2024", "Inter Miami", "MLS", 30, 25, 15, 8.5);
+                SeasonPerformance season2 = new SeasonPerformance("2022/2023", "PSG", "Ligue 1", 35, 20, 18, 8.2);
+                List<SeasonPerformance> seasons = Arrays.asList(season1, season2);
+                PlayerPerformance expectedPerformance = new PlayerPerformance(playerName, seasons);
+
+                ScrapingService scrapingService = mock(ScrapingService.class);
+                when(scrapingService.getPlayerPerformance(playerName))
+                                .thenReturn(Mono.just(expectedPerformance));
+
+                FootballDataServiceImpl footballDataService = new FootballDataServiceImpl(
+                                scrapingService,
+                                "https://api.football-data.org/v4",
+                                "test-api-token");
+
+                // Act & Assert
+                StepVerifier.create(footballDataService.getPlayerPerformance(playerName, testUser))
+                                .expectNextMatches(performance -> {
+                                        assertThat(performance).isNotNull();
+                                        assertThat(performance.getName()).isEqualTo(playerName);
+                                        assertThat(performance.getSeasons()).hasSize(2);
+                                        assertThat(testUser.getSearchHistory()).hasSize(1);
+                                        assertThat(testUser.getSearchHistory().get(0).getQuery()).isEqualTo(playerName);
+                                        return true;
+                                })
+                                .verifyComplete();
+
+                verify(scrapingService, times(1)).getPlayerPerformance(playerName);
+        }
+
+        @Test
+        void shouldReturnPlayerPerformanceWithNullUser() {
+                // Arrange
+                String playerName = "Cristiano Ronaldo";
+
+                SeasonPerformance season = new SeasonPerformance("2023/2024", "Al Nassr", "Saudi Pro League", 28, 22,
+                                10, 8.0);
+                List<SeasonPerformance> seasons = Collections.singletonList(season);
+                PlayerPerformance expectedPerformance = new PlayerPerformance(playerName, seasons);
+
+                ScrapingService scrapingService = mock(ScrapingService.class);
+                when(scrapingService.getPlayerPerformance(playerName))
+                                .thenReturn(Mono.just(expectedPerformance));
+
+                FootballDataServiceImpl footballDataService = new FootballDataServiceImpl(
+                                scrapingService,
+                                "https://api.football-data.org/v4",
+                                "test-api-token");
+
+                // Act & Assert
+                StepVerifier.create(footballDataService.getPlayerPerformance(playerName, null))
+                                .expectNextMatches(performance -> {
+                                        assertThat(performance).isNotNull();
+                                        assertThat(performance.getName()).isEqualTo(playerName);
+                                        return true;
+                                })
+                                .verifyComplete();
+
+                verify(scrapingService, times(1)).getPlayerPerformance(playerName);
+        }
+
+        @Test
+        void shouldReturnEmptyWhenScrapingServiceReturnsNullPerformance() {
+                // Arrange
+                String playerName = "Unknown Player";
+
+                ScrapingService scrapingService = mock(ScrapingService.class);
+                when(scrapingService.getPlayerPerformance(playerName))
+                                .thenReturn(Mono.empty());
+
+                FootballDataServiceImpl footballDataService = new FootballDataServiceImpl(
+                                scrapingService,
+                                "https://api.football-data.org/v4",
+                                "test-api-token");
+
+                // Act & Assert
+                StepVerifier.create(footballDataService.getPlayerPerformance(playerName, testUser))
+                                .verifyComplete();
+
+                verify(scrapingService, times(1)).getPlayerPerformance(playerName);
+                // Verify search history was NOT added because performance is null
+                assertThat(testUser.getSearchHistory()).isEmpty();
+        }
+
+        @Test
+        void shouldPropagateErrorWhenScrapingServiceFailsForPlayerPerformance() {
+                // Arrange
+                String playerName = "Test Player";
+                RuntimeException expectedException = new RuntimeException("Player data not found");
+
+                ScrapingService scrapingService = mock(ScrapingService.class);
+                when(scrapingService.getPlayerPerformance(playerName))
+                                .thenReturn(Mono.error(expectedException));
+
+                FootballDataServiceImpl footballDataService = new FootballDataServiceImpl(
+                                scrapingService,
+                                "https://api.football-data.org/v4",
+                                "test-api-token");
+
+                // Act & Assert
+                StepVerifier.create(footballDataService.getPlayerPerformance(playerName, testUser))
+                                .expectErrorMatches(error -> error instanceof RuntimeException &&
+                                                error.getMessage().equals("Player data not found"))
+                                .verify();
+
+                verify(scrapingService, times(1)).getPlayerPerformance(playerName);
+        }
+
+        // Tests for predictNextMatch method
+
+        @Test
+        void shouldReturnMatchPredictionWhenScrapingServiceReturnsData() {
+                // Arrange
+                String teamName = "River Plate";
+                String country = "Argentina";
+
+                PreviousMatch match1 = new PreviousMatch("2024-10-15", "Copa Libertadores", "River Plate", "2",
+                                "Boca Juniors", "1");
+                PreviousMatch match2 = new PreviousMatch("2024-09-20", "Liga Profesional", "Boca Juniors", "0",
+                                "River Plate", "1");
+                List<PreviousMatch> recentMeetings = Arrays.asList(match1, match2);
+                MatchPrediction expectedPrediction = new MatchPrediction("River Plate", "Boca Juniors",
+                                recentMeetings, "Victory for River Plate");
+
+                ScrapingService scrapingService = mock(ScrapingService.class);
+                when(scrapingService.predictNextMatch(teamName, country))
+                                .thenReturn(Mono.just(expectedPrediction));
+
+                FootballDataServiceImpl footballDataService = new FootballDataServiceImpl(
+                                scrapingService,
+                                "https://api.football-data.org/v4",
+                                "test-api-token");
+
+                // Act & Assert
+                StepVerifier.create(footballDataService.predictNextMatch(teamName, country, testUser))
+                                .expectNextMatches(prediction -> {
+                                        assertThat(prediction).isNotNull();
+                                        assertThat(prediction.getHomeTeam()).isEqualTo("River Plate");
+                                        assertThat(prediction.getAwayTeam()).isEqualTo("Boca Juniors");
+                                        assertThat(prediction.getPredictedResult())
+                                                        .isEqualTo("Victory for River Plate");
+                                        assertThat(prediction.getRecentMeetings()).hasSize(2);
+                                        return true;
+                                })
+                                .verifyComplete();
+
+                verify(scrapingService, times(1)).predictNextMatch(teamName, country);
+        }
+
+        @Test
+        void shouldReturnMatchPredictionWithNullUser() {
+                // Arrange
+                String teamName = "Barcelona";
+                String country = "Spain";
+
+                MatchPrediction expectedPrediction = new MatchPrediction("Barcelona", "Real Madrid",
+                                Collections.emptyList(), "Draw");
+
+                ScrapingService scrapingService = mock(ScrapingService.class);
+                when(scrapingService.predictNextMatch(teamName, country))
+                                .thenReturn(Mono.just(expectedPrediction));
+
+                FootballDataServiceImpl footballDataService = new FootballDataServiceImpl(
+                                scrapingService,
+                                "https://api.football-data.org/v4",
+                                "test-api-token");
+
+                // Act & Assert
+                StepVerifier.create(footballDataService.predictNextMatch(teamName, country, null))
+                                .expectNextMatches(prediction -> {
+                                        assertThat(prediction).isNotNull();
+                                        assertThat(prediction.getHomeTeam()).isEqualTo("Barcelona");
+                                        return true;
+                                })
+                                .verifyComplete();
+
+                verify(scrapingService, times(1)).predictNextMatch(teamName, country);
+        }
+
+        @Test
+        void shouldReturnEmptyWhenScrapingServiceReturnsNullPrediction() {
+                // Arrange
+                String teamName = "Unknown Team";
+                String country = "Unknown Country";
+
+                ScrapingService scrapingService = mock(ScrapingService.class);
+                when(scrapingService.predictNextMatch(teamName, country))
+                                .thenReturn(Mono.empty());
+
+                FootballDataServiceImpl footballDataService = new FootballDataServiceImpl(
+                                scrapingService,
+                                "https://api.football-data.org/v4",
+                                "test-api-token");
+
+                // Act & Assert
+                StepVerifier.create(footballDataService.predictNextMatch(teamName, country, testUser))
+                                .verifyComplete();
+
+                verify(scrapingService, times(1)).predictNextMatch(teamName, country);
+        }
+
+        @Test
+        void shouldPropagateErrorWhenScrapingServiceFailsForMatchPrediction() {
+                // Arrange
+                String teamName = "Test Team";
+                String country = "Test Country";
+                RuntimeException expectedException = new RuntimeException("Prediction service error");
+
+                ScrapingService scrapingService = mock(ScrapingService.class);
+                when(scrapingService.predictNextMatch(teamName, country))
+                                .thenReturn(Mono.error(expectedException));
+
+                FootballDataServiceImpl footballDataService = new FootballDataServiceImpl(
+                                scrapingService,
+                                "https://api.football-data.org/v4",
+                                "test-api-token");
+
+                // Act & Assert
+                StepVerifier.create(footballDataService.predictNextMatch(teamName, country, testUser))
+                                .expectErrorMatches(error -> error instanceof RuntimeException &&
+                                                error.getMessage().equals("Prediction service error"))
+                                .verify();
+
+                verify(scrapingService, times(1)).predictNextMatch(teamName, country);
         }
 }
