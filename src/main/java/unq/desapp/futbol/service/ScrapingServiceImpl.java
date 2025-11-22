@@ -402,7 +402,7 @@ public class ScrapingServiceImpl implements ScrapingService {
                 .flatMap(Collection::stream)
                 .distinct()
                 .limit(5)
-                .collect(Collectors.toList());
+                .toList();
 
         return new MatchPrediction(homeTeam, awayTeam, combinedMeetings, finalPrediction);
     }
