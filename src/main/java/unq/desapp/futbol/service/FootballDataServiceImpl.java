@@ -3,7 +3,8 @@ package unq.desapp.futbol.service;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Mono;
-import unq.desapp.futbol.model.Match;
+import unq.desapp.futbol.model.UpcomingMatch;
+import unq.desapp.futbol.model.MatchPrediction;
 import unq.desapp.futbol.model.Player;
 import unq.desapp.futbol.model.SearchType;
 import unq.desapp.futbol.model.User;
@@ -41,12 +42,17 @@ public class FootballDataServiceImpl implements FootballDataService {
     }
 
     @Override
-    public Mono<List<Match>> getUpcomingMatches(String teamName, String country, User user) {
+    public Mono<List<UpcomingMatch>> getUpcomingMatches(String teamName, String country, User user) {
         return scrapingService.getUpcomingMatches(teamName, country)
                 .doOnSuccess(matches -> {
                     if (matches != null && !matches.isEmpty() && user != null) {
                         user.addSearchHistory(SearchType.TEAM, teamName + " (" + country + ")");
                     }
                 });
+    }
+
+    @Override
+    public Mono<MatchPrediction> predictNextMatch(String teamName, String country, User user) {
+        return scrapingService.predictNextMatch(teamName, country);
     }
 }
