@@ -472,6 +472,11 @@ public class ScrapingServiceImpl implements ScrapingService {
         if (matches == null || matches.isEmpty())
             return "Cannot predict match outcome";
 
+        int[] scores = calculateTeamScores(matches, teamName);
+        return formatPredictionResult(scores[0], scores[1], teamName);
+    }
+
+    private int[] calculateTeamScores(List<PreviousMatch> matches, String teamName) {
         int teamWins = 0, opponentWins = 0;
 
         for (PreviousMatch match : matches) {
@@ -494,6 +499,10 @@ public class ScrapingServiceImpl implements ScrapingService {
             }
         }
 
+        return new int[]{teamWins, opponentWins};
+    }
+
+    private String formatPredictionResult(int teamWins, int opponentWins, String teamName) {
         if (teamWins > opponentWins)
             return VICTORY_LITERAL + " for " + teamName;
         if (opponentWins > teamWins)
