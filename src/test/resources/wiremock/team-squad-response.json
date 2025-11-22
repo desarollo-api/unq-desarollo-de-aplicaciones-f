@@ -1,0 +1,40 @@
+{
+    "playerTableStats": [
+        {
+            "name": "Franco Armani",
+            "age": 37,
+            "teamRegionName": "Argentina",
+            "positionText": "Goalkeeper",
+            "rating": 7.5,
+            "apps": 30,
+            "goal": 0,
+            "assistTotal": 0,
+            "redCard": 0,
+            "yellowCard": 2
+        },
+        {
+            "name": "Paulo Díaz",
+            "age": 29,
+            "teamRegionName": "Chile",
+            "positionText": "Defender",
+            "rating": 7.8,
+            "apps": 28,
+            "goal": 2,
+            "assistTotal": 1,
+            "redCard": 1,
+            "yellowCard": 5
+        },
+        {
+            "name": "Enzo Pérez",
+            "age": 38,
+            "teamRegionName": "Argentina",
+            "positionText": "Midfielder",
+            "rating": 7.2,
+            "apps": 25,
+            "goal": 1,
+            "assistTotal": 2,
+            "redCard": 0,
+            "yellowCard": 3
+        }
+    ]
+}
