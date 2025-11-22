@@ -477,7 +477,8 @@ public class ScrapingServiceImpl implements ScrapingService {
     }
 
     private int[] calculateTeamScores(List<PreviousMatch> matches, String teamName) {
-        int teamWins = 0, opponentWins = 0;
+        int teamWins = 0;
+        int opponentWins = 0;
 
         for (PreviousMatch match : matches) {
             try {
