@@ -95,7 +95,7 @@ class UserTest {
             assertEquals(u1.hashCode(), u2.hashCode());
             assertNotEquals(u1, u3);
             assertNotEquals(u1.hashCode(), u3.hashCode());
-            assertNotEquals(u1, null);
+            assertNotEquals(null, u1);
             assertNotEquals(u1, new Object());
         }
 
