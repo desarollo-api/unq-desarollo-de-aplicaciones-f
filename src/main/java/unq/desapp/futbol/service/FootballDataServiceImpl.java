@@ -1,6 +1,5 @@
 package unq.desapp.futbol.service;
 
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Mono;
 import unq.desapp.futbol.model.UpcomingMatch;
@@ -15,9 +14,7 @@ import java.util.List;
 public class FootballDataServiceImpl implements FootballDataService {
     private final ScrapingService scrapingService;
 
-    public FootballDataServiceImpl(ScrapingService scrapingService,
-            @Value("${football.api.baseurl}") String baseUrl,
-            @Value("${football.api.token}") String apiToken) {
+    public FootballDataServiceImpl(ScrapingService scrapingService) {
         this.scrapingService = scrapingService;
     }
 
