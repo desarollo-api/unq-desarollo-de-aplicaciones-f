@@ -23,7 +23,7 @@ class JwtTokenProviderTest {
         String username = tokenProvider.getUsernameFromToken(token);
 
         // Assert
-        assertEquals(username, "john.doe");
+        assertEquals("john.doe", username);
         assertTrue(tokenProvider.validateToken(token));
     }
 
