@@ -38,6 +38,8 @@ public class ScrapingServiceImpl implements ScrapingService {
     private static final Logger logger = LoggerFactory.getLogger(ScrapingServiceImpl.class);
     private static final String USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/108.0.0.0 Safari/537.36";
     private static final String HEADER_ACCEPT = "Accept";
+    private static final String VICTORY_LITERAL = "Victory";
+    private static final String DEFEAT_LITERAL = "Defeat";
 
     private final ObjectMapper objectMapper = new ObjectMapper();
     private final String baseUrl;
@@ -443,14 +445,14 @@ public class ScrapingServiceImpl implements ScrapingService {
 
     private int evaluatePrediction(List<PreviousMatch> matches, String team, boolean forTeam) {
         String prediction = getPrediction(matches, team);
-        return prediction.contains(forTeam ? "Victory" : "Defeat") ? 1 : 0;
+        return prediction.contains(forTeam ? VICTORY_LITERAL : DEFEAT_LITERAL) ? 1 : 0;
     }
 
     private int evaluateTeamPrediction(List<PreviousMatch> matches, String team, boolean isTeam, boolean forTeam) {
         String prediction = getPrediction(matches, team);
         boolean condition = isTeam
-                ? prediction.contains(forTeam ? "Victory" : "Defeat")
-                : prediction.contains(forTeam ? "Defeat" : "Victory");
+                ? prediction.contains(forTeam ? VICTORY_LITERAL : DEFEAT_LITERAL)
+                : prediction.contains(forTeam ? DEFEAT_LITERAL : VICTORY_LITERAL);
         return condition ? 1 : 0;
     }
 
@@ -458,8 +460,8 @@ public class ScrapingServiceImpl implements ScrapingService {
         if (currentPoints == opponentPoints)
             return "Draw";
         return currentPoints > opponentPoints
-                ? String.format("Victory for %s", team)
-                : String.format("Defeat for %s", team);
+                ? String.format(VICTORY_LITERAL + " for %s", team)
+                : String.format(DEFEAT_LITERAL + " for %s", team);
     }
 
     private String getPrediction(List<PreviousMatch> matches, String teamName) {
@@ -489,9 +491,9 @@ public class ScrapingServiceImpl implements ScrapingService {
         }
 
         if (teamWins > opponentWins)
-            return "Victory for " + teamName;
+            return VICTORY_LITERAL + " for " + teamName;
         if (opponentWins > teamWins)
-            return "Defeat for " + teamName;
+            return DEFEAT_LITERAL + " for " + teamName;
         return "Draw";
     }
 
