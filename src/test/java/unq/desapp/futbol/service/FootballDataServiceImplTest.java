@@ -47,9 +47,7 @@ class FootballDataServiceImplTest {
                                 .thenReturn(Mono.just(expectedPlayers));
 
                 FootballDataServiceImpl footballDataService = new FootballDataServiceImpl(
-                                scrapingService,
-                                "https://api.football-data.org/v4",
-                                "test-api-token");
+                                scrapingService);
 
                 // Act & Assert
                 StepVerifier.create(footballDataService.getTeamSquad(teamName, country, testUser))
@@ -78,9 +76,7 @@ class FootballDataServiceImplTest {
                                 .thenReturn(Mono.just(Collections.emptyList()));
 
                 FootballDataServiceImpl footballDataService = new FootballDataServiceImpl(
-                                scrapingService,
-                                "https://api.football-data.org/v4",
-                                "test-api-token");
+                                scrapingService);
 
                 // Act & Assert
                 StepVerifier.create(footballDataService.getTeamSquad(teamName, country, testUser))
@@ -105,9 +101,7 @@ class FootballDataServiceImplTest {
                                 .thenReturn(Mono.error(expectedException));
 
                 FootballDataServiceImpl footballDataService = new FootballDataServiceImpl(
-                                scrapingService,
-                                "https://api.football-data.org/v4",
-                                "test-api-token");
+                                scrapingService);
 
                 // Act & Assert
                 StepVerifier.create(footballDataService.getTeamSquad(teamName, country, testUser))
@@ -136,9 +130,7 @@ class FootballDataServiceImplTest {
                                 .thenReturn(Mono.just(expectedMatches));
 
                 FootballDataServiceImpl footballDataService = new FootballDataServiceImpl(
-                                scrapingService,
-                                "https://api.football-data.org/v4",
-                                "test-api-token");
+                                scrapingService);
 
                 // Act & Assert
                 StepVerifier.create(footballDataService.getUpcomingMatches(teamName, country, testUser))
@@ -167,9 +159,7 @@ class FootballDataServiceImplTest {
                                 .thenReturn(Mono.just(Collections.emptyList()));
 
                 FootballDataServiceImpl footballDataService = new FootballDataServiceImpl(
-                                scrapingService,
-                                "https://api.football-data.org/v4",
-                                "test-api-token");
+                                scrapingService);
 
                 // Act & Assert
                 StepVerifier.create(footballDataService.getUpcomingMatches(teamName, country, testUser))
@@ -194,9 +184,7 @@ class FootballDataServiceImplTest {
                                 .thenReturn(Mono.error(expectedException));
 
                 FootballDataServiceImpl footballDataService = new FootballDataServiceImpl(
-                                scrapingService,
-                                "https://api.football-data.org/v4",
-                                "test-api-token");
+                                scrapingService);
 
                 // Act & Assert
                 StepVerifier.create(footballDataService.getUpcomingMatches(teamName, country, testUser))
@@ -221,9 +209,7 @@ class FootballDataServiceImplTest {
                                 .thenReturn(Mono.just(expectedPlayers));
 
                 FootballDataServiceImpl footballDataService = new FootballDataServiceImpl(
-                                scrapingService,
-                                "https://api.football-data.org/v4",
-                                "test-api-token");
+                                scrapingService);
 
                 // Act & Assert
                 StepVerifier.create(footballDataService.getTeamSquad(teamName, country, testUser))
@@ -251,9 +237,7 @@ class FootballDataServiceImplTest {
                                 .thenReturn(Mono.just(expectedPlayers));
 
                 FootballDataServiceImpl footballDataService = new FootballDataServiceImpl(
-                                scrapingService,
-                                "https://api.football-data.org/v4",
-                                "test-api-token");
+                                scrapingService);
 
                 // Act & Assert - First call
                 StepVerifier.create(footballDataService.getTeamSquad(teamName, country, testUser))
@@ -283,9 +267,7 @@ class FootballDataServiceImplTest {
                                 .thenReturn(Mono.just(expectedMatches));
 
                 FootballDataServiceImpl footballDataService = new FootballDataServiceImpl(
-                                scrapingService,
-                                "https://api.football-data.org/v4",
-                                "test-api-token");
+                                scrapingService);
 
                 // Act & Assert - First call
                 StepVerifier.create(footballDataService.getUpcomingMatches(teamName, country, testUser))
@@ -314,9 +296,7 @@ class FootballDataServiceImplTest {
                                 .thenReturn(Mono.just(expectedPlayers));
 
                 FootballDataServiceImpl footballDataService = new FootballDataServiceImpl(
-                                scrapingService,
-                                "https://api.football-data.org/v4",
-                                "test-api-token");
+                                scrapingService);
 
                 // Act & Assert
                 StepVerifier.create(footballDataService.getTeamSquad(teamName, country, testUser))
@@ -346,9 +326,7 @@ class FootballDataServiceImplTest {
                                 .thenReturn(Mono.just(expectedMatches));
 
                 FootballDataServiceImpl footballDataService = new FootballDataServiceImpl(
-                                scrapingService,
-                                "https://api.football-data.org/v4",
-                                "test-api-token");
+                                scrapingService);
 
                 // Act & Assert
                 StepVerifier.create(footballDataService.getUpcomingMatches(teamName, country, testUser))
@@ -380,9 +358,7 @@ class FootballDataServiceImplTest {
                                 .thenReturn(Mono.just(expectedPerformance));
 
                 FootballDataServiceImpl footballDataService = new FootballDataServiceImpl(
-                                scrapingService,
-                                "https://api.football-data.org/v4",
-                                "test-api-token");
+                                scrapingService);
 
                 // Act & Assert
                 StepVerifier.create(footballDataService.getPlayerPerformance(playerName, testUser))
@@ -414,9 +390,7 @@ class FootballDataServiceImplTest {
                                 .thenReturn(Mono.just(expectedPerformance));
 
                 FootballDataServiceImpl footballDataService = new FootballDataServiceImpl(
-                                scrapingService,
-                                "https://api.football-data.org/v4",
-                                "test-api-token");
+                                scrapingService);
 
                 // Act & Assert
                 StepVerifier.create(footballDataService.getPlayerPerformance(playerName, null))
@@ -440,9 +414,7 @@ class FootballDataServiceImplTest {
                                 .thenReturn(Mono.empty());
 
                 FootballDataServiceImpl footballDataService = new FootballDataServiceImpl(
-                                scrapingService,
-                                "https://api.football-data.org/v4",
-                                "test-api-token");
+                                scrapingService);
 
                 // Act & Assert
                 StepVerifier.create(footballDataService.getPlayerPerformance(playerName, testUser))
@@ -464,9 +436,7 @@ class FootballDataServiceImplTest {
                                 .thenReturn(Mono.error(expectedException));
 
                 FootballDataServiceImpl footballDataService = new FootballDataServiceImpl(
-                                scrapingService,
-                                "https://api.football-data.org/v4",
-                                "test-api-token");
+                                scrapingService);
 
                 // Act & Assert
                 StepVerifier.create(footballDataService.getPlayerPerformance(playerName, testUser))
@@ -498,9 +468,7 @@ class FootballDataServiceImplTest {
                                 .thenReturn(Mono.just(expectedPrediction));
 
                 FootballDataServiceImpl footballDataService = new FootballDataServiceImpl(
-                                scrapingService,
-                                "https://api.football-data.org/v4",
-                                "test-api-token");
+                                scrapingService);
 
                 // Act & Assert
                 StepVerifier.create(footballDataService.predictNextMatch(teamName, country, testUser))
@@ -532,9 +500,7 @@ class FootballDataServiceImplTest {
                                 .thenReturn(Mono.just(expectedPrediction));
 
                 FootballDataServiceImpl footballDataService = new FootballDataServiceImpl(
-                                scrapingService,
-                                "https://api.football-data.org/v4",
-                                "test-api-token");
+                                scrapingService);
 
                 // Act & Assert
                 StepVerifier.create(footballDataService.predictNextMatch(teamName, country, null))
@@ -559,9 +525,7 @@ class FootballDataServiceImplTest {
                                 .thenReturn(Mono.empty());
 
                 FootballDataServiceImpl footballDataService = new FootballDataServiceImpl(
-                                scrapingService,
-                                "https://api.football-data.org/v4",
-                                "test-api-token");
+                                scrapingService);
 
                 // Act & Assert
                 StepVerifier.create(footballDataService.predictNextMatch(teamName, country, testUser))
@@ -582,9 +546,7 @@ class FootballDataServiceImplTest {
                                 .thenReturn(Mono.error(expectedException));
 
                 FootballDataServiceImpl footballDataService = new FootballDataServiceImpl(
-                                scrapingService,
-                                "https://api.football-data.org/v4",
-                                "test-api-token");
+                                scrapingService);
 
                 // Act & Assert
                 StepVerifier.create(footballDataService.predictNextMatch(teamName, country, testUser))

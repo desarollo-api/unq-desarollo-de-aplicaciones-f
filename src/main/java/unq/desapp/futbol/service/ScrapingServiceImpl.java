@@ -29,7 +29,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 @Service
@@ -38,6 +37,8 @@ public class ScrapingServiceImpl implements ScrapingService {
     private static final Logger logger = LoggerFactory.getLogger(ScrapingServiceImpl.class);
     private static final String USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/108.0.0.0 Safari/537.36";
     private static final String HEADER_ACCEPT = "Accept";
+    private static final String VICTORY_LITERAL = "Victory";
+    private static final String DEFEAT_LITERAL = "Defeat";
 
     private final ObjectMapper objectMapper = new ObjectMapper();
     private final String baseUrl;
@@ -402,7 +403,7 @@ public class ScrapingServiceImpl implements ScrapingService {
                 .flatMap(Collection::stream)
                 .distinct()
                 .limit(5)
-                .collect(Collectors.toList());
+                .toList();
 
         return new MatchPrediction(homeTeam, awayTeam, combinedMeetings, finalPrediction);
     }
@@ -441,32 +442,20 @@ public class ScrapingServiceImpl implements ScrapingService {
         return objectMapper.readTree(json);
     }
 
-    private JsonNode getNodeArray(JsonNode root, String field) {
-        JsonNode node = root.path(field);
-        return node.isArray() ? node : objectMapper.createArrayNode();
-    }
-
-    private List<List<Object>> getNestedNodeArray(JsonNode root, String field) {
-        JsonNode node = root.path(field);
-        if (!node.isArray())
-            return Collections.emptyList();
-
-        List<List<List<Object>>> nested = objectMapper.convertValue(
-                node, new TypeReference<List<List<List<Object>>>>() {
-                });
-        return nested.isEmpty() ? Collections.emptyList() : nested.get(0);
-    }
-
     private int evaluatePrediction(List<PreviousMatch> matches, String team, boolean forTeam) {
         String prediction = getPrediction(matches, team);
-        return prediction.contains(forTeam ? "Victory" : "Defeat") ? 1 : 0;
+        return prediction.contains(getOutcomeLiteral(forTeam)) ? 1 : 0;
+    }
+
+    private CharSequence getOutcomeLiteral(boolean isVictory) {
+        return isVictory ? VICTORY_LITERAL : DEFEAT_LITERAL;
     }
 
     private int evaluateTeamPrediction(List<PreviousMatch> matches, String team, boolean isTeam, boolean forTeam) {
         String prediction = getPrediction(matches, team);
         boolean condition = isTeam
-                ? prediction.contains(forTeam ? "Victory" : "Defeat")
-                : prediction.contains(forTeam ? "Defeat" : "Victory");
+                ? prediction.contains(getOutcomeLiteral(forTeam))
+                : prediction.contains(getOutcomeLiteral(!forTeam));
         return condition ? 1 : 0;
     }
 
@@ -474,15 +463,21 @@ public class ScrapingServiceImpl implements ScrapingService {
         if (currentPoints == opponentPoints)
             return "Draw";
         return currentPoints > opponentPoints
-                ? String.format("Victory for %s", team)
-                : String.format("Defeat for %s", team);
+                ? String.format(VICTORY_LITERAL + " for %s", team)
+                : String.format(DEFEAT_LITERAL + " for %s", team);
     }
 
     private String getPrediction(List<PreviousMatch> matches, String teamName) {
         if (matches == null || matches.isEmpty())
             return "Cannot predict match outcome";
 
-        int teamWins = 0, opponentWins = 0;
+        int[] scores = calculateTeamScores(matches, teamName);
+        return formatPredictionResult(scores[0], scores[1], teamName);
+    }
+
+    private int[] calculateTeamScores(List<PreviousMatch> matches, String teamName) {
+        int teamWins = 0;
+        int opponentWins = 0;
 
         for (PreviousMatch match : matches) {
             try {
@@ -501,13 +496,18 @@ public class ScrapingServiceImpl implements ScrapingService {
                         opponentWins++;
                 }
             } catch (NumberFormatException ignored) {
+                // Ignore invalid score formats; continue with next match
             }
         }
 
+        return new int[]{teamWins, opponentWins};
+    }
+
+    private String formatPredictionResult(int teamWins, int opponentWins, String teamName) {
         if (teamWins > opponentWins)
-            return "Victory for " + teamName;
+            return VICTORY_LITERAL + " for " + teamName;
         if (opponentWins > teamWins)
-            return "Defeat for " + teamName;
+            return DEFEAT_LITERAL + " for " + teamName;
         return "Draw";
     }
 
@@ -520,7 +520,7 @@ public class ScrapingServiceImpl implements ScrapingService {
                         m.get(33).toString(),
                         m.get(8).toString(),
                         m.get(34).toString()))
-                .collect(Collectors.toList());
+                .toList();
     }
 
     private List<PreviousMatch> buildPreviousMatchesV2(List<List<Object>> previousMeetings) {
@@ -532,7 +532,7 @@ public class ScrapingServiceImpl implements ScrapingService {
                         m.get(31).toString(),
                         m.get(8).toString(),
                         m.get(32).toString()))
-                .collect(Collectors.toList());
+                .toList();
     }
 
     private List<List<Object>> buildUpcomingMatches(List<List<Object>> fixtureMatches) {
