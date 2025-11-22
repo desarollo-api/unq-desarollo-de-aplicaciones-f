@@ -29,7 +29,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 @Service
@@ -521,7 +520,7 @@ public class ScrapingServiceImpl implements ScrapingService {
                         m.get(33).toString(),
                         m.get(8).toString(),
                         m.get(34).toString()))
-                .collect(Collectors.toList());
+                .toList();
     }
 
     private List<PreviousMatch> buildPreviousMatchesV2(List<List<Object>> previousMeetings) {
@@ -533,7 +532,7 @@ public class ScrapingServiceImpl implements ScrapingService {
                         m.get(31).toString(),
                         m.get(8).toString(),
                         m.get(32).toString()))
-                .collect(Collectors.toList());
+                .toList();
     }
 
     private List<List<Object>> buildUpcomingMatches(List<List<Object>> fixtureMatches) {
