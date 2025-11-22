@@ -497,6 +497,7 @@ public class ScrapingServiceImpl implements ScrapingService {
                         opponentWins++;
                 }
             } catch (NumberFormatException ignored) {
+                // Ignore invalid score formats; continue with next match
             }
         }
 
