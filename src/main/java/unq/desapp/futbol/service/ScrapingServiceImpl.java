@@ -445,14 +445,18 @@ public class ScrapingServiceImpl implements ScrapingService {
 
     private int evaluatePrediction(List<PreviousMatch> matches, String team, boolean forTeam) {
         String prediction = getPrediction(matches, team);
-        return prediction.contains(forTeam ? VICTORY_LITERAL : DEFEAT_LITERAL) ? 1 : 0;
+        return prediction.contains(getOutcomeLiteral(forTeam)) ? 1 : 0;
+    }
+
+    private CharSequence getOutcomeLiteral(boolean isVictory) {
+        return isVictory ? VICTORY_LITERAL : DEFEAT_LITERAL;
     }
 
     private int evaluateTeamPrediction(List<PreviousMatch> matches, String team, boolean isTeam, boolean forTeam) {
         String prediction = getPrediction(matches, team);
         boolean condition = isTeam
-                ? prediction.contains(forTeam ? VICTORY_LITERAL : DEFEAT_LITERAL)
-                : prediction.contains(forTeam ? DEFEAT_LITERAL : VICTORY_LITERAL);
+                ? prediction.contains(getOutcomeLiteral(forTeam))
+                : prediction.contains(getOutcomeLiteral(!forTeam));
         return condition ? 1 : 0;
     }
 
