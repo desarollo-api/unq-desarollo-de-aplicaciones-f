@@ -441,22 +441,6 @@ public class ScrapingServiceImpl implements ScrapingService {
         return objectMapper.readTree(json);
     }
 
-    private JsonNode getNodeArray(JsonNode root, String field) {
-        JsonNode node = root.path(field);
-        return node.isArray() ? node : objectMapper.createArrayNode();
-    }
-
-    private List<List<Object>> getNestedNodeArray(JsonNode root, String field) {
-        JsonNode node = root.path(field);
-        if (!node.isArray())
-            return Collections.emptyList();
-
-        List<List<List<Object>>> nested = objectMapper.convertValue(
-                node, new TypeReference<List<List<List<Object>>>>() {
-                });
-        return nested.isEmpty() ? Collections.emptyList() : nested.get(0);
-    }
-
     private int evaluatePrediction(List<PreviousMatch> matches, String team, boolean forTeam) {
         String prediction = getPrediction(matches, team);
         return prediction.contains(forTeam ? "Victory" : "Defeat") ? 1 : 0;
