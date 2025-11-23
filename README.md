@@ -14,6 +14,8 @@ A Spring Boot backend that exposes a football (soccer) API with JWT-based authen
 - Spring Boot 3.5.5
   - Spring WebFlux (Reactive)
   - Spring Security Reactive (JWT)
+  - Spring Data JPA
+- H2 Database (embedded)
 - JSON Web Token (jjwt 0.12.3)
 - Lombok
 - Jsoup (HTML parsing/scraping)
@@ -31,9 +33,7 @@ A Spring Boot backend that exposes a football (soccer) API with JWT-based authen
   - Reactive, stateless JWT-based authentication using Spring Security WebFlux
   - All requests require authentication except those under `/auth/**`
   - CORS enabled for all origins and standard HTTP methods
-  - Two in-memory demo users are provided by `CustomReactiveUserDetailsService`:
-    - `user@example.com` / `password`
-    - `admin@example.com` / `adminpass`
+  - Users are persisted in H2 database (see Database section)
   - Authentication components:
     - `ReactiveJwtAuthenticationManager`: Validates JWT tokens reactively
     - `ReactiveUserPasswordAuthenticationManager`: Authenticates username/password for login
@@ -45,6 +45,15 @@ A Spring Boot backend that exposes a football (soccer) API with JWT-based authen
   - JWT settings are externalizable via env vars with defaults:
     - `JWT_SECRET_KEY` (base64-encoded HMAC key)
     - `JWT_EXPIRATION` (milliseconds; default 604800000 = 7 days)
+- Database:
+  - **H2 Database** (embedded, file-based) for user persistence
+  - Database file location: `./data/futbol-db`
+  - H2 Console enabled at `/h2-console` for development
+    - JDBC URL: `jdbc:h2:file:./data/futbol-db`
+    - Username: `sa`
+    - Password: (empty)
+  - JPA/Hibernate configured with `ddl-auto=update` (auto-creates/updates schema)
+  - Users persist between application restarts
 
 ### REST API
 
