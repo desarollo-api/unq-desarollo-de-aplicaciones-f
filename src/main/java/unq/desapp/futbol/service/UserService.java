@@ -46,4 +46,9 @@ public class UserService {
                 user.getRole());
         return userRepository.save(newUser);
     }
+
+    @Transactional
+    public User saveUser(User user) {
+        return userRepository.save(user);
+    }
 }

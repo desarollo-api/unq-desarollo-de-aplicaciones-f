@@ -13,9 +13,11 @@ import java.util.List;
 @Service
 public class FootballDataServiceImpl implements FootballDataService {
     private final ScrapingService scrapingService;
+    private final UserService userService;
 
-    public FootballDataServiceImpl(ScrapingService scrapingService) {
+    public FootballDataServiceImpl(ScrapingService scrapingService, UserService userService) {
         this.scrapingService = scrapingService;
+        this.userService = userService;
     }
 
     @Override
@@ -24,6 +26,7 @@ public class FootballDataServiceImpl implements FootballDataService {
                 .doOnSuccess(squad -> {
                     if (squad != null && !squad.isEmpty() && user != null) {
                         user.addSearchHistory(SearchType.TEAM, teamName + " (" + country + ")");
+                        userService.saveUser(user);
                     }
                 });
     }
@@ -34,6 +37,7 @@ public class FootballDataServiceImpl implements FootballDataService {
                 .doOnSuccess(performance -> {
                     if (performance != null && user != null) {
                         user.addSearchHistory(SearchType.PLAYER, playerName);
+                        userService.saveUser(user);
                     }
                 });
     }
@@ -44,6 +48,7 @@ public class FootballDataServiceImpl implements FootballDataService {
                 .doOnSuccess(matches -> {
                     if (matches != null && !matches.isEmpty() && user != null) {
                         user.addSearchHistory(SearchType.TEAM, teamName + " (" + country + ")");
+                        userService.saveUser(user);
                     }
                 });
     }
