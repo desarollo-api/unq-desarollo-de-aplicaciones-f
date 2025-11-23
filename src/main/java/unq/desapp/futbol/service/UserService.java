@@ -1,13 +1,12 @@
 package unq.desapp.futbol.service;
 
+import java.util.List;
+import java.util.Optional;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import unq.desapp.futbol.model.User;
 import unq.desapp.futbol.repository.UserRepository;
-
-import java.util.List;
-import java.util.Optional;
 
 @Service
 public class UserService {
