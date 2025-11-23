@@ -25,10 +25,12 @@ import unq.desapp.futbol.model.User;
 class FootballDataServiceImplTest {
 
         private User testUser;
+        private UserService userService;
 
         @BeforeEach
         void setUp() {
                 testUser = new User("test@user.com", "password", "Test", "User", Role.USER);
+                userService = mock(UserService.class);
         }
 
         @Test
@@ -47,7 +49,7 @@ class FootballDataServiceImplTest {
                                 .thenReturn(Mono.just(expectedPlayers));
 
                 FootballDataServiceImpl footballDataService = new FootballDataServiceImpl(
-                                scrapingService);
+                                scrapingService, userService);
 
                 // Act & Assert
                 StepVerifier.create(footballDataService.getTeamSquad(teamName, country, testUser))
@@ -76,7 +78,7 @@ class FootballDataServiceImplTest {
                                 .thenReturn(Mono.just(Collections.emptyList()));
 
                 FootballDataServiceImpl footballDataService = new FootballDataServiceImpl(
-                                scrapingService);
+                                scrapingService, userService);
 
                 // Act & Assert
                 StepVerifier.create(footballDataService.getTeamSquad(teamName, country, testUser))
@@ -101,7 +103,7 @@ class FootballDataServiceImplTest {
                                 .thenReturn(Mono.error(expectedException));
 
                 FootballDataServiceImpl footballDataService = new FootballDataServiceImpl(
-                                scrapingService);
+                                scrapingService, userService);
 
                 // Act & Assert
                 StepVerifier.create(footballDataService.getTeamSquad(teamName, country, testUser))
@@ -130,7 +132,7 @@ class FootballDataServiceImplTest {
                                 .thenReturn(Mono.just(expectedMatches));
 
                 FootballDataServiceImpl footballDataService = new FootballDataServiceImpl(
-                                scrapingService);
+                                scrapingService, userService);
 
                 // Act & Assert
                 StepVerifier.create(footballDataService.getUpcomingMatches(teamName, country, testUser))
@@ -159,7 +161,7 @@ class FootballDataServiceImplTest {
                                 .thenReturn(Mono.just(Collections.emptyList()));
 
                 FootballDataServiceImpl footballDataService = new FootballDataServiceImpl(
-                                scrapingService);
+                                scrapingService, userService);
 
                 // Act & Assert
                 StepVerifier.create(footballDataService.getUpcomingMatches(teamName, country, testUser))
@@ -184,7 +186,7 @@ class FootballDataServiceImplTest {
                                 .thenReturn(Mono.error(expectedException));
 
                 FootballDataServiceImpl footballDataService = new FootballDataServiceImpl(
-                                scrapingService);
+                                scrapingService, userService);
 
                 // Act & Assert
                 StepVerifier.create(footballDataService.getUpcomingMatches(teamName, country, testUser))
@@ -209,7 +211,7 @@ class FootballDataServiceImplTest {
                                 .thenReturn(Mono.just(expectedPlayers));
 
                 FootballDataServiceImpl footballDataService = new FootballDataServiceImpl(
-                                scrapingService);
+                                scrapingService, userService);
 
                 // Act & Assert
                 StepVerifier.create(footballDataService.getTeamSquad(teamName, country, testUser))
@@ -237,7 +239,7 @@ class FootballDataServiceImplTest {
                                 .thenReturn(Mono.just(expectedPlayers));
 
                 FootballDataServiceImpl footballDataService = new FootballDataServiceImpl(
-                                scrapingService);
+                                scrapingService, userService);
 
                 // Act & Assert - First call
                 StepVerifier.create(footballDataService.getTeamSquad(teamName, country, testUser))
@@ -267,7 +269,7 @@ class FootballDataServiceImplTest {
                                 .thenReturn(Mono.just(expectedMatches));
 
                 FootballDataServiceImpl footballDataService = new FootballDataServiceImpl(
-                                scrapingService);
+                                scrapingService, userService);
 
                 // Act & Assert - First call
                 StepVerifier.create(footballDataService.getUpcomingMatches(teamName, country, testUser))
@@ -296,7 +298,7 @@ class FootballDataServiceImplTest {
                                 .thenReturn(Mono.just(expectedPlayers));
 
                 FootballDataServiceImpl footballDataService = new FootballDataServiceImpl(
-                                scrapingService);
+                                scrapingService, userService);
 
                 // Act & Assert
                 StepVerifier.create(footballDataService.getTeamSquad(teamName, country, testUser))
@@ -326,7 +328,7 @@ class FootballDataServiceImplTest {
                                 .thenReturn(Mono.just(expectedMatches));
 
                 FootballDataServiceImpl footballDataService = new FootballDataServiceImpl(
-                                scrapingService);
+                                scrapingService, userService);
 
                 // Act & Assert
                 StepVerifier.create(footballDataService.getUpcomingMatches(teamName, country, testUser))
@@ -358,7 +360,7 @@ class FootballDataServiceImplTest {
                                 .thenReturn(Mono.just(expectedPerformance));
 
                 FootballDataServiceImpl footballDataService = new FootballDataServiceImpl(
-                                scrapingService);
+                                scrapingService, userService);
 
                 // Act & Assert
                 StepVerifier.create(footballDataService.getPlayerPerformance(playerName, testUser))
@@ -390,7 +392,7 @@ class FootballDataServiceImplTest {
                                 .thenReturn(Mono.just(expectedPerformance));
 
                 FootballDataServiceImpl footballDataService = new FootballDataServiceImpl(
-                                scrapingService);
+                                scrapingService, userService);
 
                 // Act & Assert
                 StepVerifier.create(footballDataService.getPlayerPerformance(playerName, null))
@@ -414,7 +416,7 @@ class FootballDataServiceImplTest {
                                 .thenReturn(Mono.empty());
 
                 FootballDataServiceImpl footballDataService = new FootballDataServiceImpl(
-                                scrapingService);
+                                scrapingService, userService);
 
                 // Act & Assert
                 StepVerifier.create(footballDataService.getPlayerPerformance(playerName, testUser))
@@ -436,7 +438,7 @@ class FootballDataServiceImplTest {
                                 .thenReturn(Mono.error(expectedException));
 
                 FootballDataServiceImpl footballDataService = new FootballDataServiceImpl(
-                                scrapingService);
+                                scrapingService, userService);
 
                 // Act & Assert
                 StepVerifier.create(footballDataService.getPlayerPerformance(playerName, testUser))
@@ -468,7 +470,7 @@ class FootballDataServiceImplTest {
                                 .thenReturn(Mono.just(expectedPrediction));
 
                 FootballDataServiceImpl footballDataService = new FootballDataServiceImpl(
-                                scrapingService);
+                                scrapingService, userService);
 
                 // Act & Assert
                 StepVerifier.create(footballDataService.predictNextMatch(teamName, country, testUser))
@@ -500,7 +502,7 @@ class FootballDataServiceImplTest {
                                 .thenReturn(Mono.just(expectedPrediction));
 
                 FootballDataServiceImpl footballDataService = new FootballDataServiceImpl(
-                                scrapingService);
+                                scrapingService, userService);
 
                 // Act & Assert
                 StepVerifier.create(footballDataService.predictNextMatch(teamName, country, null))
@@ -525,7 +527,7 @@ class FootballDataServiceImplTest {
                                 .thenReturn(Mono.empty());
 
                 FootballDataServiceImpl footballDataService = new FootballDataServiceImpl(
-                                scrapingService);
+                                scrapingService, userService);
 
                 // Act & Assert
                 StepVerifier.create(footballDataService.predictNextMatch(teamName, country, testUser))
@@ -546,7 +548,7 @@ class FootballDataServiceImplTest {
                                 .thenReturn(Mono.error(expectedException));
 
                 FootballDataServiceImpl footballDataService = new FootballDataServiceImpl(
-                                scrapingService);
+                                scrapingService, userService);
 
                 // Act & Assert
                 StepVerifier.create(footballDataService.predictNextMatch(teamName, country, testUser))
