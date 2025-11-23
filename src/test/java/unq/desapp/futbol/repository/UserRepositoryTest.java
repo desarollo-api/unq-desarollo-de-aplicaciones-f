@@ -1,6 +1,7 @@
 package unq.desapp.futbol.repository;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.fail;
 
 import java.util.List;
 import java.util.Optional;
@@ -123,7 +124,7 @@ class UserRepositoryTest {
         try {
             entityManager.persist(user2);
             entityManager.flush();
-            assertThat(false).as("Expected unique constraint violation").isTrue();
+            fail("Expected unique constraint violation");
         } catch (Exception e) {
             // Expected: unique constraint violation
             assertThat(e).isNotNull();
