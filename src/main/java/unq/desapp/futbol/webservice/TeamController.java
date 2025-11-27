@@ -15,6 +15,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import reactor.core.publisher.Mono;
 import unq.desapp.futbol.model.UpcomingMatch;
 import unq.desapp.futbol.model.MatchPrediction;
+import unq.desapp.futbol.model.TeamComparison;
 import unq.desapp.futbol.model.Player;
 import unq.desapp.futbol.model.User;
 import unq.desapp.futbol.service.FootballDataService;
@@ -82,6 +83,27 @@ public class TeamController {
 
                 String teamName = name.replace('-', ' ');
                 return footballDataService.predictNextMatch(teamName, country, user)
+                                .map(ResponseEntity::ok)
+                                .defaultIfEmpty(ResponseEntity.notFound().build());
+        }
+
+        @GetMapping("/compare/{countryA}/{nameA}/vs/{countryB}/{nameB}")
+        @Operation(summary = "Compare two teams", description = "Provides a side-by-side comparison of two teams based on their squad statistics. This action is recorded in the user's search history.")
+        @ApiResponses(value = {
+                        @ApiResponse(responseCode = "200", description = "Successfully generated comparison", content = @Content(mediaType = "application/json", schema = @Schema(implementation = TeamComparison.class))),
+                        @ApiResponse(responseCode = "401", description = "Unauthorized - JWT token is missing or invalid", content = @Content),
+                        @ApiResponse(responseCode = "404", description = "One or both teams not found", content = @Content)
+        })
+        public Mono<ResponseEntity<TeamComparison>> compareTeams(
+                        @Parameter(description = "Country of the first team", required = true) @PathVariable String countryA,
+                        @Parameter(description = "Name of the first team", required = true) @PathVariable String nameA,
+                        @Parameter(description = "Country of the second team", required = true) @PathVariable String countryB,
+                        @Parameter(description = "Name of the second team", required = true) @PathVariable String nameB,
+                        @AuthenticationPrincipal User user) {
+
+                String teamNameA = nameA.replace('-', ' ');
+                String teamNameB = nameB.replace('-', ' ');
+                return footballDataService.compareTeams(teamNameA, countryA, teamNameB, countryB, user)
                                 .map(ResponseEntity::ok)
                                 .defaultIfEmpty(ResponseEntity.notFound().build());
         }
