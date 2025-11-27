@@ -3,12 +3,15 @@ package unq.desapp.futbol.service;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Mono;
 import unq.desapp.futbol.model.UpcomingMatch;
+import unq.desapp.futbol.model.TeamComparison;
+import unq.desapp.futbol.model.TeamStats;
 import unq.desapp.futbol.model.MatchPrediction;
 import unq.desapp.futbol.model.Player;
 import unq.desapp.futbol.model.SearchType;
 import unq.desapp.futbol.model.User;
 import unq.desapp.futbol.model.PlayerPerformance;
 import java.util.List;
+import java.util.Optional;
 
 @Service
 public class FootballDataServiceImpl implements FootballDataService {
@@ -56,5 +59,68 @@ public class FootballDataServiceImpl implements FootballDataService {
     @Override
     public Mono<MatchPrediction> predictNextMatch(String teamName, String country, User user) {
         return scrapingService.predictNextMatch(teamName, country);
+    }
+
+    @Override
+    public Mono<TeamComparison> compareTeams(String teamNameA, String countryA, String teamNameB, String countryB,
+            User user) {
+        Mono<List<Player>> squadA = scrapingService.getTeamSquad(teamNameA, countryA);
+        Mono<List<Player>> squadB = scrapingService.getTeamSquad(teamNameB, countryB);
+
+        return Mono.zip(squadA, squadB)
+                .map(tuple -> {
+                    List<Player> playersA = tuple.getT1();
+                    List<Player> playersB = tuple.getT2();
+
+                    TeamStats statsA = calculateTeamStats(teamNameA, countryA, playersA);
+                    TeamStats statsB = calculateTeamStats(teamNameB, countryB, playersB);
+
+                    String verdict = generateVerdict(statsA, statsB);
+
+                    return new TeamComparison(statsA, statsB, verdict);
+                })
+                .doOnSuccess(comparison -> {
+                    if (user != null) {
+                        String query = String.format("%s (%s) vs %s (%s)", teamNameA, countryA, teamNameB, countryB);
+                        user.addSearchHistory(SearchType.TEAM, query);
+                        userService.saveUser(user);
+                    }
+                });
+    }
+
+    private TeamStats calculateTeamStats(String teamName, String country, List<Player> players) {
+        TeamStats stats = new TeamStats(teamName, country);
+        if (players == null || players.isEmpty()) {
+            return stats;
+        }
+
+        stats.setSquadSize(players.size());
+        stats.setAverageAge(players.stream().map(Player::getAge).filter(java.util.Objects::nonNull).mapToInt(a -> a)
+                .average().orElse(0.0));
+        stats.setAverageRating(
+                players.stream().map(Player::getRating).filter(java.util.Objects::nonNull).mapToDouble(r -> r)
+                        .average().orElse(0.0));
+        stats.setTotalGoals(players.stream().map(Player::getGoals).filter(java.util.Objects::nonNull).mapToInt(g -> g)
+                .sum());
+        stats.setTotalAssists(
+                players.stream().map(Player::getAssist).filter(java.util.Objects::nonNull).mapToInt(a -> a)
+                        .sum());
+
+        return stats;
+    }
+
+    private String generateVerdict(TeamStats statsA, TeamStats statsB) {
+        double ratingDiff = statsA.getAverageRating() - statsB.getAverageRating();
+        int goalsDiff = statsA.getTotalGoals() - statsB.getTotalGoals();
+
+        if (Math.abs(ratingDiff) < 0.1) {
+            return "Ambos equipos parecen tener un nivel muy similar.";
+        } else if (ratingDiff > 0 && goalsDiff > 0) {
+            return String.format("%s parece superior, con un mejor rating promedio y más goles en su plantilla.",
+                    statsA.getTeamName());
+        } else {
+            return String.format("%s parece superior, con un mejor rating promedio y más goles en su plantilla.",
+                    statsB.getTeamName());
+        }
     }
 }
