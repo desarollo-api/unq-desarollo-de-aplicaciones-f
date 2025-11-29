@@ -1,4 +1,4 @@
-package unq.desapp.futbol.webservice;
+package unq.desapp.futbol.controller;
 
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
@@ -19,7 +19,7 @@ import unq.desapp.futbol.model.TeamStats;
 import unq.desapp.futbol.model.TeamComparison;
 import unq.desapp.futbol.model.Player;
 import unq.desapp.futbol.model.User;
-import unq.desapp.futbol.service.FootballDataService;
+import unq.desapp.futbol.service.TeamService;
 import java.util.List;
 
 @RestController
@@ -28,10 +28,10 @@ import java.util.List;
 @RequestMapping("/teams")
 public class TeamController {
 
-        private final FootballDataService footballDataService;
+        private final TeamService teamService;
 
-        public TeamController(FootballDataService footballDataService) {
-                this.footballDataService = footballDataService;
+        public TeamController(TeamService teamService) {
+                this.teamService = teamService;
         }
 
         @GetMapping("/{country}/{name}/squad")
@@ -47,7 +47,7 @@ public class TeamController {
                         @AuthenticationPrincipal User user) {
 
                 String teamName = name.replace('-', ' ');
-                return footballDataService.getTeamSquad(teamName, country, user)
+                return teamService.getTeamSquad(teamName, country, user)
                                 .map(ResponseEntity::ok)
                                 .defaultIfEmpty(ResponseEntity.notFound().build());
         }
@@ -65,7 +65,7 @@ public class TeamController {
                         @AuthenticationPrincipal User user) {
 
                 String teamName = name.replace('-', ' ');
-                return footballDataService.getUpcomingMatches(teamName, country, user)
+                return teamService.getUpcomingMatches(teamName, country, user)
                                 .map(ResponseEntity::ok)
                                 .defaultIfEmpty(ResponseEntity.notFound().build());
         }
@@ -83,7 +83,7 @@ public class TeamController {
                         @AuthenticationPrincipal User user) {
 
                 String teamName = name.replace('-', ' ');
-                return footballDataService.predictNextMatch(teamName, country, user)
+                return teamService.predictNextMatch(teamName, country, user)
                                 .map(ResponseEntity::ok)
                                 .defaultIfEmpty(ResponseEntity.notFound().build());
         }
@@ -101,7 +101,7 @@ public class TeamController {
                         @AuthenticationPrincipal User user) {
 
                 String teamName = name.replace('-', ' ');
-                return footballDataService.getSingleTeamStats(teamName, country, user)
+                return teamService.getSingleTeamStats(teamName, country, user)
                                 .map(ResponseEntity::ok)
                                 .defaultIfEmpty(ResponseEntity.notFound().build());
         }
@@ -122,7 +122,7 @@ public class TeamController {
 
                 String teamNameA = nameA.replace('-', ' ');
                 String teamNameB = nameB.replace('-', ' ');
-                return footballDataService.compareTeams(teamNameA, countryA, teamNameB, countryB, user)
+                return teamService.compareTeams(teamNameA, countryA, teamNameB, countryB, user)
                                 .map(ResponseEntity::ok)
                                 .defaultIfEmpty(ResponseEntity.notFound().build());
         }

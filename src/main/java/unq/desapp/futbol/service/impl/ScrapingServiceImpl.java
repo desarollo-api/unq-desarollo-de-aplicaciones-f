@@ -1,4 +1,4 @@
-package unq.desapp.futbol.service;
+package unq.desapp.futbol.service.impl;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -15,6 +15,8 @@ import org.springframework.util.StringUtils;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
 import unq.desapp.futbol.model.UpcomingMatch;
+import unq.desapp.futbol.service.ScrapingService;
+import unq.desapp.futbol.model.TeamStats;
 import unq.desapp.futbol.model.MatchPrediction;
 import unq.desapp.futbol.model.Player;
 import unq.desapp.futbol.model.PlayerPerformance;
@@ -500,7 +502,7 @@ public class ScrapingServiceImpl implements ScrapingService {
             }
         }
 
-        return new int[]{teamWins, opponentWins};
+        return new int[] { teamWins, opponentWins };
     }
 
     private String formatPredictionResult(int teamWins, int opponentWins, String teamName) {
@@ -545,5 +547,62 @@ public class ScrapingServiceImpl implements ScrapingService {
         }
 
         return upcomingMatches;
+    }
+
+    // TEAM STATS
+
+    @Override
+    public Mono<TeamStats> getTeamStats(String teamName, String country) {
+        return Mono.fromCallable(() -> fetchTeamStats(teamName, country))
+                .subscribeOn(Schedulers.boundedElastic())
+                .onErrorResume(e -> {
+                    logger.error("Error fetching team stats for team: {} ({})", teamName, country, e);
+                    return Mono.empty();
+                });
+    }
+
+    private TeamStats fetchTeamStats(String teamName, String country) throws IOException {
+        // 1. Reutilizar la búsqueda del equipo para obtener su URL y su ID
+        String teamPageUrl = searchTeam(teamName, country);
+        int teamId = extractTeamId(teamPageUrl);
+
+        // 2. Obtener la plantilla de jugadores usando el método existente
+        List<Player> players = fetchTeamSquadFromAPI(teamName, country);
+
+        // 3. Calcular las estadísticas basadas en los jugadores
+        TeamStats stats = calculatePlayerBasedStats(teamName, country, players);
+
+        // 4. (LÓGICA FUTURA) Extraer datos adicionales de la página del equipo
+        // Document teamPage = Jsoup.connect(teamPageUrl).userAgent(USER_AGENT).get();
+        // stats.setLeaguePosition(extractLeaguePosition(teamPage));
+        // stats.setForm(extractForm(teamPage));
+        // ... etc
+
+        logger.info("Successfully generated stats for team '{}'", teamName);
+        return stats;
+    }
+
+    private TeamStats calculatePlayerBasedStats(String teamName, String country, List<Player> players) {
+        TeamStats stats = new TeamStats(teamName, country);
+        if (players == null || players.isEmpty()) {
+            return stats;
+        }
+
+        stats.setSquadSize(players.size());
+
+        stats.setAverageAge(players.stream().map(Player::getAge).filter(java.util.Objects::nonNull).mapToInt(a -> a)
+                .average().orElse(0.0));
+
+        stats.setAverageRating(
+                players.stream().map(Player::getRating).filter(java.util.Objects::nonNull).mapToDouble(r -> r)
+                        .average().orElse(0.0));
+
+        stats.setTotalGoals(players.stream().map(Player::getGoals).filter(java.util.Objects::nonNull).mapToInt(g -> g)
+                .sum());
+
+        stats.setTotalAssists(
+                players.stream().map(Player::getAssist).filter(java.util.Objects::nonNull).mapToInt(a -> a).sum());
+
+        return stats;
     }
 }

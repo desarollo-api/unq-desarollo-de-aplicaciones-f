@@ -1,4 +1,4 @@
-package unq.desapp.futbol.webservice;
+package unq.desapp.futbol.controller;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
@@ -22,14 +22,14 @@ import unq.desapp.futbol.model.PlayerPerformance;
 import unq.desapp.futbol.model.Role;
 import unq.desapp.futbol.model.SeasonPerformance;
 import unq.desapp.futbol.model.User;
-import unq.desapp.futbol.service.FootballDataService;
+import unq.desapp.futbol.service.PlayerService;
 
 @ExtendWith(MockitoExtension.class)
 @DisplayName("PlayerController Tests")
 class PlayerControllerTest {
 
         @Mock
-        private FootballDataService footballDataService;
+        private PlayerService playerService;
 
         private PlayerController playerController;
 
@@ -37,7 +37,7 @@ class PlayerControllerTest {
 
         @BeforeEach
         void setUp() {
-                playerController = new PlayerController(footballDataService);
+                playerController = new PlayerController(playerService);
                 testUser = new User("test@user.com", "pass", "Test", "User", Role.USER);
         }
 
@@ -58,7 +58,7 @@ class PlayerControllerTest {
                         PlayerPerformance expectedPerformance = new PlayerPerformance(expectedPlayerName,
                                         Collections.singletonList(season));
 
-                        when(footballDataService.getPlayerPerformance(expectedPlayerName, testUser))
+                        when(playerService.getPlayerPerformance(expectedPlayerName, testUser))
                                         .thenReturn(Mono.just(expectedPerformance));
 
                         // Act
@@ -77,7 +77,7 @@ class PlayerControllerTest {
                                         })
                                         .verifyComplete();
 
-                        verify(footballDataService).getPlayerPerformance(expectedPlayerName, testUser);
+                        verify(playerService).getPlayerPerformance(expectedPlayerName, testUser);
                 }
 
                 @Test
@@ -87,7 +87,7 @@ class PlayerControllerTest {
                         String playerNameWithMultipleHyphens = "lionel-andres-messi";
                         String expectedPlayerName = "lionel andres messi";
 
-                        when(footballDataService.getPlayerPerformance(expectedPlayerName, testUser))
+                        when(playerService.getPlayerPerformance(expectedPlayerName, testUser))
                                         .thenReturn(Mono.just(new PlayerPerformance(expectedPlayerName,
                                                         Collections.emptyList())));
 
@@ -100,7 +100,7 @@ class PlayerControllerTest {
                                         .expectNextCount(1)
                                         .verifyComplete();
 
-                        verify(footballDataService).getPlayerPerformance(expectedPlayerName, testUser);
+                        verify(playerService).getPlayerPerformance(expectedPlayerName, testUser);
                 }
 
                 @Test
@@ -111,7 +111,7 @@ class PlayerControllerTest {
                         PlayerPerformance expectedPerformance = new PlayerPerformance(playerName,
                                         Collections.emptyList());
 
-                        when(footballDataService.getPlayerPerformance(playerName, testUser))
+                        when(playerService.getPlayerPerformance(playerName, testUser))
                                         .thenReturn(Mono.just(expectedPerformance));
 
                         // Act
@@ -126,7 +126,7 @@ class PlayerControllerTest {
                                         })
                                         .verifyComplete();
 
-                        verify(footballDataService).getPlayerPerformance(playerName, testUser);
+                        verify(playerService).getPlayerPerformance(playerName, testUser);
                 }
         }
 
@@ -141,7 +141,7 @@ class PlayerControllerTest {
                         String playerName = "unknown-player";
                         String expectedPlayerName = "unknown player";
 
-                        when(footballDataService.getPlayerPerformance(anyString(), any(User.class)))
+                        when(playerService.getPlayerPerformance(anyString(), any(User.class)))
                                         .thenReturn(Mono.empty());
 
                         // Act
@@ -156,7 +156,7 @@ class PlayerControllerTest {
                                         })
                                         .verifyComplete();
 
-                        verify(footballDataService).getPlayerPerformance(expectedPlayerName, testUser);
+                        verify(playerService).getPlayerPerformance(expectedPlayerName, testUser);
                 }
 
                 @Test
@@ -167,7 +167,7 @@ class PlayerControllerTest {
                         String expectedPlayerName = "error player";
                         RuntimeException expectedException = new RuntimeException("Service unavailable");
 
-                        when(footballDataService.getPlayerPerformance(anyString(), any(User.class)))
+                        when(playerService.getPlayerPerformance(anyString(), any(User.class)))
                                         .thenReturn(Mono.error(expectedException));
 
                         // Act
@@ -179,7 +179,7 @@ class PlayerControllerTest {
                                         .expectError(RuntimeException.class)
                                         .verify();
 
-                        verify(footballDataService).getPlayerPerformance(expectedPlayerName, testUser);
+                        verify(playerService).getPlayerPerformance(expectedPlayerName, testUser);
                 }
         }
 }

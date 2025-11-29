@@ -1,5 +1,14 @@
 package unq.desapp.futbol.model;
 
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+
+@AllArgsConstructor
+@NoArgsConstructor
+@Getter
+@Setter
 public class TeamStats {
 
     private String teamName;
@@ -13,53 +22,5 @@ public class TeamStats {
     public TeamStats(String teamName, String country) {
         this.teamName = teamName;
         this.country = country;
-    }
-
-    public String getTeamName() {
-        return teamName;
-    }
-
-    public String getCountry() {
-        return country;
-    }
-
-    public int getSquadSize() {
-        return squadSize;
-    }
-
-    public void setSquadSize(int squadSize) {
-        this.squadSize = squadSize;
-    }
-
-    public double getAverageAge() {
-        return averageAge;
-    }
-
-    public void setAverageAge(double averageAge) {
-        this.averageAge = averageAge;
-    }
-
-    public double getAverageRating() {
-        return averageRating;
-    }
-
-    public void setAverageRating(double averageRating) {
-        this.averageRating = averageRating;
-    }
-
-    public int getTotalGoals() {
-        return totalGoals;
-    }
-
-    public void setTotalGoals(int totalGoals) {
-        this.totalGoals = totalGoals;
-    }
-
-    public int getTotalAssists() {
-        return totalAssists;
-    }
-
-    public void setTotalAssists(int totalAssists) {
-        this.totalAssists = totalAssists;
     }
 }

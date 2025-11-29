@@ -1,4 +1,4 @@
-package unq.desapp.futbol.webservice;
+package unq.desapp.futbol.controller;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
@@ -90,7 +90,8 @@ class AuthControllerTest {
     @DisplayName("Register with valid data creates user with USER role")
     void register_success_returnsCreatedUser() {
         // Arrange
-        RegisterRequest request = new RegisterRequest(testUser.getEmail(), testUser.getPassword(), testUser.getFirstName(), testUser.getLastName());
+        RegisterRequest request = new RegisterRequest(testUser.getEmail(), testUser.getPassword(),
+                testUser.getFirstName(), testUser.getLastName());
         String expectedToken = "new.user.token";
         long expectedExpiresIn = 3600L;
 
@@ -117,8 +118,10 @@ class AuthControllerTest {
     @Test
     void register_failure_whenEmailExists() {
         // Arrange
-        RegisterRequest request = new RegisterRequest(testUser.getEmail(), testUser.getPassword(), testUser.getFirstName(), testUser.getLastName());
-        when(footballService.addUser(any(User.class))).thenThrow(new IllegalArgumentException("Email is already taken"));
+        RegisterRequest request = new RegisterRequest(testUser.getEmail(), testUser.getPassword(),
+                testUser.getFirstName(), testUser.getLastName());
+        when(footballService.addUser(any(User.class)))
+                .thenThrow(new IllegalArgumentException("Email is already taken"));
 
         // Act & Assert
         StepVerifier.create(controller.register(request))

@@ -5,7 +5,6 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -14,15 +13,15 @@ import org.junit.jupiter.api.Test;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 import unq.desapp.futbol.model.MatchPrediction;
+import unq.desapp.futbol.model.TeamStats;
 import unq.desapp.futbol.model.Player;
-import unq.desapp.futbol.model.PlayerPerformance;
 import unq.desapp.futbol.model.PreviousMatch;
 import unq.desapp.futbol.model.Role;
-import unq.desapp.futbol.model.SeasonPerformance;
 import unq.desapp.futbol.model.UpcomingMatch;
 import unq.desapp.futbol.model.User;
+import unq.desapp.futbol.service.impl.TeamServiceImpl;
 
-class FootballDataServiceImplTest {
+class TeamServiceImplTest {
 
         private User testUser;
         private UserService userService;
@@ -48,11 +47,10 @@ class FootballDataServiceImplTest {
                 when(scrapingService.getTeamSquad(teamName, country))
                                 .thenReturn(Mono.just(expectedPlayers));
 
-                FootballDataServiceImpl footballDataService = new FootballDataServiceImpl(
-                                scrapingService, userService);
+                TeamServiceImpl teamService = new TeamServiceImpl(scrapingService, userService);
 
                 // Act & Assert
-                StepVerifier.create(footballDataService.getTeamSquad(teamName, country, testUser))
+                StepVerifier.create(teamService.getTeamSquad(teamName, country, testUser))
                                 .expectNextMatches(players -> {
                                         assertThat(players).hasSize(3);
                                         assertThat(players.get(0).getName()).isEqualTo("Franco Armani");
@@ -77,11 +75,10 @@ class FootballDataServiceImplTest {
                 when(scrapingService.getTeamSquad(teamName, country))
                                 .thenReturn(Mono.just(Collections.emptyList()));
 
-                FootballDataServiceImpl footballDataService = new FootballDataServiceImpl(
-                                scrapingService, userService);
+                TeamServiceImpl teamService = new TeamServiceImpl(scrapingService, userService);
 
                 // Act & Assert
-                StepVerifier.create(footballDataService.getTeamSquad(teamName, country, testUser))
+                StepVerifier.create(teamService.getTeamSquad(teamName, country, testUser))
                                 .expectNextMatches(players -> {
                                         assertThat(players).isEmpty();
                                         return true;
@@ -102,11 +99,10 @@ class FootballDataServiceImplTest {
                 when(scrapingService.getTeamSquad(teamName, country))
                                 .thenReturn(Mono.error(expectedException));
 
-                FootballDataServiceImpl footballDataService = new FootballDataServiceImpl(
-                                scrapingService, userService);
+                TeamServiceImpl teamService = new TeamServiceImpl(scrapingService, userService);
 
                 // Act & Assert
-                StepVerifier.create(footballDataService.getTeamSquad(teamName, country, testUser))
+                StepVerifier.create(teamService.getTeamSquad(teamName, country, testUser))
                                 .expectErrorMatches(error -> error instanceof RuntimeException &&
                                                 error.getMessage().equals("Scraping service error"))
                                 .verify();
@@ -131,11 +127,10 @@ class FootballDataServiceImplTest {
                 when(scrapingService.getUpcomingMatches(teamName, country))
                                 .thenReturn(Mono.just(expectedMatches));
 
-                FootballDataServiceImpl footballDataService = new FootballDataServiceImpl(
-                                scrapingService, userService);
+                TeamServiceImpl teamService = new TeamServiceImpl(scrapingService, userService);
 
                 // Act & Assert
-                StepVerifier.create(footballDataService.getUpcomingMatches(teamName, country, testUser))
+                StepVerifier.create(teamService.getUpcomingMatches(teamName, country, testUser))
                                 .expectNextMatches(matches -> {
                                         assertThat(matches).hasSize(3);
                                         assertThat(matches.get(0).getHomeTeam()).isEqualTo("Boca Juniors");
@@ -160,11 +155,10 @@ class FootballDataServiceImplTest {
                 when(scrapingService.getUpcomingMatches(teamName, country))
                                 .thenReturn(Mono.just(Collections.emptyList()));
 
-                FootballDataServiceImpl footballDataService = new FootballDataServiceImpl(
-                                scrapingService, userService);
+                TeamServiceImpl teamService = new TeamServiceImpl(scrapingService, userService);
 
                 // Act & Assert
-                StepVerifier.create(footballDataService.getUpcomingMatches(teamName, country, testUser))
+                StepVerifier.create(teamService.getUpcomingMatches(teamName, country, testUser))
                                 .expectNextMatches(matches -> {
                                         assertThat(matches).isEmpty();
                                         return true;
@@ -185,11 +179,10 @@ class FootballDataServiceImplTest {
                 when(scrapingService.getUpcomingMatches(teamName, country))
                                 .thenReturn(Mono.error(expectedException));
 
-                FootballDataServiceImpl footballDataService = new FootballDataServiceImpl(
-                                scrapingService, userService);
+                TeamServiceImpl teamService = new TeamServiceImpl(scrapingService, userService);
 
                 // Act & Assert
-                StepVerifier.create(footballDataService.getUpcomingMatches(teamName, country, testUser))
+                StepVerifier.create(teamService.getUpcomingMatches(teamName, country, testUser))
                                 .expectErrorMatches(error -> error instanceof RuntimeException &&
                                                 error.getMessage().equals("Network error"))
                                 .verify();
@@ -210,11 +203,10 @@ class FootballDataServiceImplTest {
                 when(scrapingService.getTeamSquad(teamName, country))
                                 .thenReturn(Mono.just(expectedPlayers));
 
-                FootballDataServiceImpl footballDataService = new FootballDataServiceImpl(
-                                scrapingService, userService);
+                TeamServiceImpl teamService = new TeamServiceImpl(scrapingService, userService);
 
                 // Act & Assert
-                StepVerifier.create(footballDataService.getTeamSquad(teamName, country, testUser))
+                StepVerifier.create(teamService.getTeamSquad(teamName, country, testUser))
                                 .expectNextMatches(players -> {
                                         assertThat(players).hasSize(1);
                                         assertThat(players.get(0).getName()).isEqualTo("Lionel Messi");
@@ -238,16 +230,15 @@ class FootballDataServiceImplTest {
                 when(scrapingService.getTeamSquad(teamName, country))
                                 .thenReturn(Mono.just(expectedPlayers));
 
-                FootballDataServiceImpl footballDataService = new FootballDataServiceImpl(
-                                scrapingService, userService);
+                TeamServiceImpl teamService = new TeamServiceImpl(scrapingService, userService);
 
                 // Act & Assert - First call
-                StepVerifier.create(footballDataService.getTeamSquad(teamName, country, testUser))
+                StepVerifier.create(teamService.getTeamSquad(teamName, country, testUser))
                                 .expectNextMatches(players -> players.size() == 1)
                                 .verifyComplete();
 
                 // Act & Assert - Second call
-                StepVerifier.create(footballDataService.getTeamSquad(teamName, country, testUser))
+                StepVerifier.create(teamService.getTeamSquad(teamName, country, testUser))
                                 .expectNextMatches(players -> players.size() == 1)
                                 .verifyComplete();
 
@@ -268,16 +259,15 @@ class FootballDataServiceImplTest {
                 when(scrapingService.getUpcomingMatches(teamName, country))
                                 .thenReturn(Mono.just(expectedMatches));
 
-                FootballDataServiceImpl footballDataService = new FootballDataServiceImpl(
-                                scrapingService, userService);
+                TeamServiceImpl teamService = new TeamServiceImpl(scrapingService, userService);
 
                 // Act & Assert - First call
-                StepVerifier.create(footballDataService.getUpcomingMatches(teamName, country, testUser))
+                StepVerifier.create(teamService.getUpcomingMatches(teamName, country, testUser))
                                 .expectNextMatches(matches -> matches.size() == 1)
                                 .verifyComplete();
 
                 // Act & Assert - Second call
-                StepVerifier.create(footballDataService.getUpcomingMatches(teamName, country, testUser))
+                StepVerifier.create(teamService.getUpcomingMatches(teamName, country, testUser))
                                 .expectNextMatches(matches -> matches.size() == 1)
                                 .verifyComplete();
 
@@ -297,11 +287,10 @@ class FootballDataServiceImplTest {
                 when(scrapingService.getTeamSquad(teamName, country))
                                 .thenReturn(Mono.just(expectedPlayers));
 
-                FootballDataServiceImpl footballDataService = new FootballDataServiceImpl(
-                                scrapingService, userService);
+                TeamServiceImpl teamService = new TeamServiceImpl(scrapingService, userService);
 
                 // Act & Assert
-                StepVerifier.create(footballDataService.getTeamSquad(teamName, country, testUser))
+                StepVerifier.create(teamService.getTeamSquad(teamName, country, testUser))
                                 .expectNextMatches(players -> {
                                         assertThat(players).hasSize(1);
                                         assertThat(players.get(0).getName()).isEqualTo("Player Name");
@@ -327,11 +316,10 @@ class FootballDataServiceImplTest {
                 when(scrapingService.getUpcomingMatches(teamName, country))
                                 .thenReturn(Mono.just(expectedMatches));
 
-                FootballDataServiceImpl footballDataService = new FootballDataServiceImpl(
-                                scrapingService, userService);
+                TeamServiceImpl teamService = new TeamServiceImpl(scrapingService, userService);
 
                 // Act & Assert
-                StepVerifier.create(footballDataService.getUpcomingMatches(teamName, country, testUser))
+                StepVerifier.create(teamService.getUpcomingMatches(teamName, country, testUser))
                                 .expectNextMatches(matches -> {
                                         assertThat(matches).hasSize(1);
                                         assertThat(matches.get(0).getDate()).isEqualTo("2024-10-20");
@@ -341,112 +329,6 @@ class FootballDataServiceImplTest {
                                 .verifyComplete();
 
                 verify(scrapingService, times(1)).getUpcomingMatches(teamName, country);
-        }
-
-        // Tests for getPlayerPerformance method
-
-        @Test
-        void shouldReturnPlayerPerformanceWhenScrapingServiceReturnsData() {
-                // Arrange
-                String playerName = "Lionel Messi";
-
-                SeasonPerformance season1 = new SeasonPerformance("2023/2024", "Inter Miami", "MLS", 30, 25, 15, 8.5);
-                SeasonPerformance season2 = new SeasonPerformance("2022/2023", "PSG", "Ligue 1", 35, 20, 18, 8.2);
-                List<SeasonPerformance> seasons = Arrays.asList(season1, season2);
-                PlayerPerformance expectedPerformance = new PlayerPerformance(playerName, seasons);
-
-                ScrapingService scrapingService = mock(ScrapingService.class);
-                when(scrapingService.getPlayerPerformance(playerName))
-                                .thenReturn(Mono.just(expectedPerformance));
-
-                FootballDataServiceImpl footballDataService = new FootballDataServiceImpl(
-                                scrapingService, userService);
-
-                // Act & Assert
-                StepVerifier.create(footballDataService.getPlayerPerformance(playerName, testUser))
-                                .expectNextMatches(performance -> {
-                                        assertThat(performance).isNotNull();
-                                        assertThat(performance.getName()).isEqualTo(playerName);
-                                        assertThat(performance.getSeasons()).hasSize(2);
-                                        assertThat(testUser.getSearchHistory()).hasSize(1);
-                                        assertThat(testUser.getSearchHistory().get(0).getQuery()).isEqualTo(playerName);
-                                        return true;
-                                })
-                                .verifyComplete();
-
-                verify(scrapingService, times(1)).getPlayerPerformance(playerName);
-        }
-
-        @Test
-        void shouldReturnPlayerPerformanceWithNullUser() {
-                // Arrange
-                String playerName = "Cristiano Ronaldo";
-
-                SeasonPerformance season = new SeasonPerformance("2023/2024", "Al Nassr", "Saudi Pro League", 28, 22,
-                                10, 8.0);
-                List<SeasonPerformance> seasons = Collections.singletonList(season);
-                PlayerPerformance expectedPerformance = new PlayerPerformance(playerName, seasons);
-
-                ScrapingService scrapingService = mock(ScrapingService.class);
-                when(scrapingService.getPlayerPerformance(playerName))
-                                .thenReturn(Mono.just(expectedPerformance));
-
-                FootballDataServiceImpl footballDataService = new FootballDataServiceImpl(
-                                scrapingService, userService);
-
-                // Act & Assert
-                StepVerifier.create(footballDataService.getPlayerPerformance(playerName, null))
-                                .expectNextMatches(performance -> {
-                                        assertThat(performance).isNotNull();
-                                        assertThat(performance.getName()).isEqualTo(playerName);
-                                        return true;
-                                })
-                                .verifyComplete();
-
-                verify(scrapingService, times(1)).getPlayerPerformance(playerName);
-        }
-
-        @Test
-        void shouldReturnEmptyWhenScrapingServiceReturnsNullPerformance() {
-                // Arrange
-                String playerName = "Unknown Player";
-
-                ScrapingService scrapingService = mock(ScrapingService.class);
-                when(scrapingService.getPlayerPerformance(playerName))
-                                .thenReturn(Mono.empty());
-
-                FootballDataServiceImpl footballDataService = new FootballDataServiceImpl(
-                                scrapingService, userService);
-
-                // Act & Assert
-                StepVerifier.create(footballDataService.getPlayerPerformance(playerName, testUser))
-                                .verifyComplete();
-
-                verify(scrapingService, times(1)).getPlayerPerformance(playerName);
-                // Verify search history was NOT added because performance is null
-                assertThat(testUser.getSearchHistory()).isEmpty();
-        }
-
-        @Test
-        void shouldPropagateErrorWhenScrapingServiceFailsForPlayerPerformance() {
-                // Arrange
-                String playerName = "Test Player";
-                RuntimeException expectedException = new RuntimeException("Player data not found");
-
-                ScrapingService scrapingService = mock(ScrapingService.class);
-                when(scrapingService.getPlayerPerformance(playerName))
-                                .thenReturn(Mono.error(expectedException));
-
-                FootballDataServiceImpl footballDataService = new FootballDataServiceImpl(
-                                scrapingService, userService);
-
-                // Act & Assert
-                StepVerifier.create(footballDataService.getPlayerPerformance(playerName, testUser))
-                                .expectErrorMatches(error -> error instanceof RuntimeException &&
-                                                error.getMessage().equals("Player data not found"))
-                                .verify();
-
-                verify(scrapingService, times(1)).getPlayerPerformance(playerName);
         }
 
         // Tests for predictNextMatch method
@@ -469,11 +351,10 @@ class FootballDataServiceImplTest {
                 when(scrapingService.predictNextMatch(teamName, country))
                                 .thenReturn(Mono.just(expectedPrediction));
 
-                FootballDataServiceImpl footballDataService = new FootballDataServiceImpl(
-                                scrapingService, userService);
+                TeamServiceImpl teamService = new TeamServiceImpl(scrapingService, userService);
 
                 // Act & Assert
-                StepVerifier.create(footballDataService.predictNextMatch(teamName, country, testUser))
+                StepVerifier.create(teamService.predictNextMatch(teamName, country, testUser))
                                 .expectNextMatches(prediction -> {
                                         assertThat(prediction).isNotNull();
                                         assertThat(prediction.getHomeTeam()).isEqualTo("River Plate");
@@ -501,11 +382,10 @@ class FootballDataServiceImplTest {
                 when(scrapingService.predictNextMatch(teamName, country))
                                 .thenReturn(Mono.just(expectedPrediction));
 
-                FootballDataServiceImpl footballDataService = new FootballDataServiceImpl(
-                                scrapingService, userService);
+                TeamServiceImpl teamService = new TeamServiceImpl(scrapingService, userService);
 
                 // Act & Assert
-                StepVerifier.create(footballDataService.predictNextMatch(teamName, country, null))
+                StepVerifier.create(teamService.predictNextMatch(teamName, country, null))
                                 .expectNextMatches(prediction -> {
                                         assertThat(prediction).isNotNull();
                                         assertThat(prediction.getHomeTeam()).isEqualTo("Barcelona");
@@ -526,11 +406,10 @@ class FootballDataServiceImplTest {
                 when(scrapingService.predictNextMatch(teamName, country))
                                 .thenReturn(Mono.empty());
 
-                FootballDataServiceImpl footballDataService = new FootballDataServiceImpl(
-                                scrapingService, userService);
+                TeamServiceImpl teamService = new TeamServiceImpl(scrapingService, userService);
 
                 // Act & Assert
-                StepVerifier.create(footballDataService.predictNextMatch(teamName, country, testUser))
+                StepVerifier.create(teamService.predictNextMatch(teamName, country, testUser))
                                 .verifyComplete();
 
                 verify(scrapingService, times(1)).predictNextMatch(teamName, country);
@@ -547,15 +426,80 @@ class FootballDataServiceImplTest {
                 when(scrapingService.predictNextMatch(teamName, country))
                                 .thenReturn(Mono.error(expectedException));
 
-                FootballDataServiceImpl footballDataService = new FootballDataServiceImpl(
-                                scrapingService, userService);
+                TeamServiceImpl teamService = new TeamServiceImpl(scrapingService, userService);
 
                 // Act & Assert
-                StepVerifier.create(footballDataService.predictNextMatch(teamName, country, testUser))
+                StepVerifier.create(teamService.predictNextMatch(teamName, country, testUser))
                                 .expectErrorMatches(error -> error instanceof RuntimeException &&
                                                 error.getMessage().equals("Prediction service error"))
                                 .verify();
 
                 verify(scrapingService, times(1)).predictNextMatch(teamName, country);
+        }
+
+        // Tests for getSingleTeamStats
+
+        @Test
+        void shouldReturnTeamStatsWhenScrapingServiceReturnsData() {
+                // Arrange
+                String teamName = "River Plate";
+                String country = "Argentina";
+                TeamStats expectedStats = new TeamStats(teamName, country);
+                expectedStats.setSquadSize(25);
+                expectedStats.setAverageAge(28.5);
+
+                ScrapingService scrapingService = mock(ScrapingService.class);
+                when(scrapingService.getTeamStats(teamName, country)).thenReturn(Mono.just(expectedStats));
+
+                TeamServiceImpl teamService = new TeamServiceImpl(scrapingService, userService);
+
+                // Act & Assert
+                StepVerifier.create(teamService.getSingleTeamStats(teamName, country, testUser))
+                                .expectNextMatches(stats -> {
+                                        assertThat(stats).isNotNull();
+                                        assertThat(stats.getTeamName()).isEqualTo(teamName);
+                                        assertThat(stats.getSquadSize()).isEqualTo(25);
+                                        assertThat(testUser.getSearchHistory()).hasSize(1);
+                                        return true;
+                                })
+                                .verifyComplete();
+
+                verify(scrapingService, times(1)).getTeamStats(teamName, country);
+        }
+
+        // Tests for compareTeams
+
+        @Test
+        void shouldReturnTeamComparisonWhenScrapingServiceReturnsSquads() {
+                // Arrange
+                String teamNameA = "River Plate";
+                String countryA = "Argentina";
+                String teamNameB = "Boca Juniors";
+                String countryB = "Argentina";
+
+                Player playerA = new Player("Franco Armani", 37, "Argentina", "Goalkeeper", 7.5, 30, 0, 0, 0, 2);
+                Player playerB = new Player("Edinson Cavani", 37, "Uruguay", "Forward", 7.2, 20, 10, 2, 0, 1);
+
+                List<Player> squadA = Collections.singletonList(playerA);
+                List<Player> squadB = Collections.singletonList(playerB);
+
+                ScrapingService scrapingService = mock(ScrapingService.class);
+                when(scrapingService.getTeamSquad(teamNameA, countryA)).thenReturn(Mono.just(squadA));
+                when(scrapingService.getTeamSquad(teamNameB, countryB)).thenReturn(Mono.just(squadB));
+
+                TeamServiceImpl teamService = new TeamServiceImpl(scrapingService, userService);
+
+                // Act & Assert
+                StepVerifier.create(teamService.compareTeams(teamNameA, countryA, teamNameB, countryB, testUser))
+                                .expectNextMatches(comparison -> {
+                                        assertThat(comparison).isNotNull();
+                                        assertThat(comparison.getTeamA().getTeamName()).isEqualTo(teamNameA);
+                                        assertThat(comparison.getTeamB().getTeamName()).isEqualTo(teamNameB);
+                                        assertThat(comparison.getTeamA().getAverageRating()).isEqualTo(7.5);
+                                        assertThat(comparison.getTeamB().getTotalGoals()).isEqualTo(10);
+                                        assertThat(testUser.getSearchHistory()).hasSize(1);
+                                        return true;
+                                })
+                                .verifyComplete();
         }
 }
