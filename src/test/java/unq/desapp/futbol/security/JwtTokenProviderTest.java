@@ -6,9 +6,11 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.Base64;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Tag;
 import unq.desapp.futbol.model.Role;
 import unq.desapp.futbol.model.User;
 
+@Tag("unit")
 class JwtTokenProviderTest {
 
     @Test

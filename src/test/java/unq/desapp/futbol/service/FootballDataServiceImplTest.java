@@ -11,6 +11,7 @@ import java.util.Collections;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Tag;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 import unq.desapp.futbol.model.MatchPrediction;
@@ -22,6 +23,7 @@ import unq.desapp.futbol.model.SeasonPerformance;
 import unq.desapp.futbol.model.UpcomingMatch;
 import unq.desapp.futbol.model.User;
 
+@Tag("unit")
 class FootballDataServiceImplTest {
 
         private User testUser;

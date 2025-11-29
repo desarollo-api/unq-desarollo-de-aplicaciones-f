@@ -12,6 +12,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.api.Tag;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.HttpStatus;
@@ -26,6 +27,7 @@ import unq.desapp.futbol.service.FootballDataService;
 
 @ExtendWith(MockitoExtension.class)
 @DisplayName("PlayerController Tests")
+@Tag("unit")
 class PlayerControllerTest {
 
         @Mock

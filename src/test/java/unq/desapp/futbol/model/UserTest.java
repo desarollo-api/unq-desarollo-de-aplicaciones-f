@@ -8,8 +8,10 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.util.Collection;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Tag;
 import org.springframework.security.core.GrantedAuthority;
 
+@Tag("unit")
 class UserTest {
 
     @Nested
