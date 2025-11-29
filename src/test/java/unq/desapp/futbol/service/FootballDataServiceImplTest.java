@@ -1,7 +1,9 @@
 package unq.desapp.futbol.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -486,6 +488,10 @@ class FootballDataServiceImplTest {
                                 .verifyComplete();
 
                 verify(scrapingService, times(1)).predictNextMatch(teamName, country);
+                // Verify search history was added
+                assertThat(testUser.getSearchHistory()).hasSize(1);
+                assertThat(testUser.getSearchHistory().get(0).getQuery()).isEqualTo(teamName + " (" + country + ")");
+                verify(userService, times(1)).saveUser(testUser);
         }
 
         @Test
@@ -514,6 +520,8 @@ class FootballDataServiceImplTest {
                                 .verifyComplete();
 
                 verify(scrapingService, times(1)).predictNextMatch(teamName, country);
+                // Verify search history was NOT added because user is null
+                verify(userService, never()).saveUser(any());
         }
 
         @Test
@@ -534,6 +542,9 @@ class FootballDataServiceImplTest {
                                 .verifyComplete();
 
                 verify(scrapingService, times(1)).predictNextMatch(teamName, country);
+                // Verify search history was NOT added because prediction is empty
+                assertThat(testUser.getSearchHistory()).isEmpty();
+                verify(userService, never()).saveUser(any());
         }
 
         @Test
