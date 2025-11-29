@@ -11,7 +11,6 @@ import unq.desapp.futbol.model.SearchType;
 import unq.desapp.futbol.model.User;
 import unq.desapp.futbol.model.PlayerPerformance;
 import java.util.List;
-import java.util.Optional;
 
 @Service
 public class FootballDataServiceImpl implements FootballDataService {
@@ -59,6 +58,19 @@ public class FootballDataServiceImpl implements FootballDataService {
     @Override
     public Mono<MatchPrediction> predictNextMatch(String teamName, String country, User user) {
         return scrapingService.predictNextMatch(teamName, country);
+    }
+
+    @Override
+    public Mono<TeamStats> getSingleTeamStats(String teamName, String country, User user) {
+        // Delegamos la lógica de cálculo y scraping al ScrapingService
+        return scrapingService.getTeamStats(teamName, country)
+                .doOnSuccess(stats -> {
+                    if (stats != null && stats.getSquadSize() > 0 && user != null) {
+                        String query = String.format("%s (%s) stats", teamName, country);
+                        user.addSearchHistory(SearchType.TEAM, query);
+                        userService.saveUser(user);
+                    }
+                });
     }
 
     @Override

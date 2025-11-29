@@ -4,6 +4,7 @@ import reactor.core.publisher.Mono;
 import unq.desapp.futbol.model.UpcomingMatch;
 import unq.desapp.futbol.model.MatchPrediction;
 import unq.desapp.futbol.model.Player;
+import unq.desapp.futbol.model.TeamStats;
 import unq.desapp.futbol.model.PlayerPerformance;
 import java.util.List;
 
@@ -15,4 +16,6 @@ public interface ScrapingService {
     Mono<PlayerPerformance> getPlayerPerformance(String playerName);
 
     Mono<MatchPrediction> predictNextMatch(String teamName, String country);
+
+    Mono<TeamStats> getTeamStats(String teamName, String country);
 }

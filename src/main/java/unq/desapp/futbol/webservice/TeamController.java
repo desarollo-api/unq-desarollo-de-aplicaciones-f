@@ -15,6 +15,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import reactor.core.publisher.Mono;
 import unq.desapp.futbol.model.UpcomingMatch;
 import unq.desapp.futbol.model.MatchPrediction;
+import unq.desapp.futbol.model.TeamStats;
 import unq.desapp.futbol.model.TeamComparison;
 import unq.desapp.futbol.model.Player;
 import unq.desapp.futbol.model.User;
@@ -83,6 +84,24 @@ public class TeamController {
 
                 String teamName = name.replace('-', ' ');
                 return footballDataService.predictNextMatch(teamName, country, user)
+                                .map(ResponseEntity::ok)
+                                .defaultIfEmpty(ResponseEntity.notFound().build());
+        }
+
+        @GetMapping("/{country}/{name}/stats")
+        @Operation(summary = "Get Team Statistics", description = "Returns aggregated statistics for a given team, based on its current squad and season performance. This action is recorded in the user's search history.")
+        @ApiResponses(value = {
+                        @ApiResponse(responseCode = "200", description = "Successfully retrieved team statistics", content = @Content(mediaType = "application/json", schema = @Schema(implementation = TeamStats.class))),
+                        @ApiResponse(responseCode = "401", description = "Unauthorized - JWT token is missing or invalid", content = @Content),
+                        @ApiResponse(responseCode = "404", description = "Team not found", content = @Content)
+        })
+        public Mono<ResponseEntity<TeamStats>> getTeamStats(
+                        @Parameter(description = "Country of the team", required = true, example = "England") @PathVariable String country,
+                        @Parameter(description = "Name of the team, use hyphens for spaces", required = true, example = "manchester-united") @PathVariable String name,
+                        @AuthenticationPrincipal User user) {
+
+                String teamName = name.replace('-', ' ');
+                return footballDataService.getSingleTeamStats(teamName, country, user)
                                 .map(ResponseEntity::ok)
                                 .defaultIfEmpty(ResponseEntity.notFound().build());
         }
