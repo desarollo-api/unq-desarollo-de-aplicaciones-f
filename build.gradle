@@ -71,7 +71,7 @@ tasks.register('e2eTest', Test) {
 	shouldRunAfter test, unitTest
 }
 
-def executionFiles = [
+def jacocoExecutionFiles = [
 	"build/jacoco/test.exec",
 	"build/jacoco/unitTest.exec",
 	"build/jacoco/e2eTest.exec"
@@ -88,7 +88,9 @@ jacoco {
 }
 
 jacocoTestReport {
-	executionData.from = files(executionFiles).filter { it.exists() }
+	executionData.from = files(jacocoExecutionFiles).filter { it.exists() }
+
+	mustRunAfter test, unitTest, e2eTest
 
 	reports {
 		xml.required = true
@@ -101,7 +103,9 @@ jacocoTestReport {
 }
 
 jacocoTestCoverageVerification {
-	executionData.from = files(executionFiles).filter { it.exists() }
+	executionData.from = files(jacocoExecutionFiles).filter { it.exists() }
+
+	mustRunAfter test, unitTest, e2eTest
 
 	violationRules {
 		rule {
