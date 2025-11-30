@@ -55,6 +55,7 @@ tasks.register('unitTest', Test) {
 	useJUnitPlatform {
 		includeTags 'unit'
 		excludeTags 'e2e'
+		excludeTags 'arch'
 	}
 
 	shouldRunAfter test
@@ -67,6 +68,7 @@ tasks.register('e2eTest', Test) {
 	useJUnitPlatform {
 		includeTags 'e2e'
 		excludeTags 'unit'
+		excludeTags 'arch'
 	}
 
 	shouldRunAfter test, unitTest
@@ -88,8 +90,7 @@ tasks.register('archTest', Test) {
 def jacocoExecutionFiles = [
 	"build/jacoco/test.exec",
 	"build/jacoco/unitTest.exec",
-	"build/jacoco/e2eTest.exec",
-	"build/jacoco/archTest.exec"
+	"build/jacoco/e2eTest.exec"
 ]
 
 def coverageExcludes = [
