@@ -47,6 +47,36 @@ tasks.named('test') {
 	useJUnitPlatform()
 }
 
+tasks.register('unitTest', Test) {
+	description = 'Runs only unit tests (fast tests with mocks, no external infrastructure)'
+	group = 'verification'
+
+	useJUnitPlatform {
+		includeTags 'unit'
+		excludeTags 'e2e'
+	}
+
+	shouldRunAfter test
+}
+
+tasks.register('e2eTest', Test) {
+	description = 'Runs only E2E and integration tests (tests with databases, WireMock, etc.)'
+	group = 'verification'
+
+	useJUnitPlatform {
+		includeTags 'e2e'
+		excludeTags 'unit'
+	}
+
+	shouldRunAfter test, unitTest
+}
+
+def jacocoExecutionFiles = [
+	"build/jacoco/test.exec",
+	"build/jacoco/unitTest.exec",
+	"build/jacoco/e2eTest.exec"
+]
+
 def coverageExcludes = [
 	'unq/desapp/futbol/FutbolProjectApplication.class',
 	'unq/desapp/futbol/security/SecurityConfig*.class',
@@ -58,17 +88,25 @@ jacoco {
 }
 
 jacocoTestReport {
-	dependsOn test
+	executionData.from = files(jacocoExecutionFiles).filter { it.exists() }
+
+	mustRunAfter test, unitTest, e2eTest
+
 	reports {
 		xml.required = true
 		html.required = true
 	}
+
 	classDirectories.setFrom(sourceSets.main.output.asFileTree.matching {
 		exclude coverageExcludes
 	})
 }
 
 jacocoTestCoverageVerification {
+	executionData.from = files(jacocoExecutionFiles).filter { it.exists() }
+
+	mustRunAfter test, unitTest, e2eTest
+
 	violationRules {
 		rule {
 			limit {
@@ -76,6 +114,7 @@ jacocoTestCoverageVerification {
 			}
 		}
 	}
+
 	classDirectories.setFrom(sourceSets.main.output.asFileTree.matching {
 		exclude coverageExcludes
 	})

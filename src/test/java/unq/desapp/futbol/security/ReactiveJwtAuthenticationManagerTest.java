@@ -10,6 +10,7 @@ import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.api.Tag;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -20,6 +21,7 @@ import unq.desapp.futbol.model.User;
 import unq.desapp.futbol.service.UserService;
 
 @ExtendWith(MockitoExtension.class)
+@Tag("unit")
 class ReactiveJwtAuthenticationManagerTest {
 
     private static final String TOKEN = "jwt-token";

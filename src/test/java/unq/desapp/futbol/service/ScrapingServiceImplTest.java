@@ -14,9 +14,11 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import reactor.test.StepVerifier;
 
+@Tag("e2e")
 class ScrapingServiceImplTest {
 
         private WireMockServer wireMockServer;
