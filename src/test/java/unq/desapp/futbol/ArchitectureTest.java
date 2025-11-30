@@ -16,7 +16,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.bind.annotation.RestController;
 
 @AnalyzeClasses(packages = "unq.desapp.futbol", importOptions = { ImportOption.DoNotIncludeTests.class })
-@Tag("unit")
+@Tag("arch")
 public class ArchitectureTest {
 
     @ArchTest

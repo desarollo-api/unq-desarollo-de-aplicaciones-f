@@ -72,10 +72,24 @@ tasks.register('e2eTest', Test) {
 	shouldRunAfter test, unitTest
 }
 
+tasks.register('archTest', Test) {
+	description = 'Runs only architecture tests'
+	group = 'verification'
+
+	useJUnitPlatform {
+		includeTags 'arch'
+		excludeTags 'unit'
+		excludeTags 'e2e'
+	}
+
+	shouldRunAfter test, unitTest, e2eTest
+}
+
 def jacocoExecutionFiles = [
 	"build/jacoco/test.exec",
 	"build/jacoco/unitTest.exec",
-	"build/jacoco/e2eTest.exec"
+	"build/jacoco/e2eTest.exec",
+	"build/jacoco/archTest.exec"
 ]
 
 def coverageExcludes = [
