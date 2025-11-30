@@ -4,11 +4,13 @@ import com.tngtech.archunit.junit.AnalyzeClasses;
 import com.tngtech.archunit.junit.ArchTest;
 import com.tngtech.archunit.lang.ArchRule;
 
+import com.tngtech.archunit.core.importer.ImportOption;
+
 import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.classes;
 
 import static com.tngtech.archunit.library.Architectures.layeredArchitecture;
 
-@AnalyzeClasses(packages = "unq.desapp.futbol")
+@AnalyzeClasses(packages = "unq.desapp.futbol", importOptions = { ImportOption.DoNotIncludeTests.class })
 public class ArchitectureTest {
 
     @ArchTest
@@ -26,5 +28,24 @@ public class ArchitectureTest {
             .whereLayer("Controller").mayNotBeAccessedByAnyLayer()
             .whereLayer("Service").mayOnlyBeAccessedByLayers("Controller", "Security")
             .whereLayer("Repository").mayOnlyBeAccessedByLayers("Service");
+
+    @ArchTest
+    static final ArchRule controllers_should_have_name_ending_with_controller = classes()
+            .that().resideInAPackage("..webservice..")
+            .and().areTopLevelClasses()
+            .should().haveSimpleNameEndingWith("Controller");
+
+    @ArchTest
+    static final ArchRule services_should_have_name_ending_with_service = classes()
+            .that().resideInAPackage("..service..")
+            .and().areTopLevelClasses()
+            .should().haveSimpleNameEndingWith("Service")
+            .orShould().haveSimpleNameEndingWith("ServiceImpl");
+
+    @ArchTest
+    static final ArchRule repositories_should_have_name_ending_with_repository = classes()
+            .that().resideInAPackage("..repository..")
+            .and().areTopLevelClasses()
+            .should().haveSimpleNameEndingWith("Repository");
 
 }
