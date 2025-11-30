@@ -36,7 +36,8 @@ dependencies {
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
     testImplementation 'io.projectreactor:reactor-test:3.6.6'
     testImplementation 'org.wiremock:wiremock-standalone:3.13.2'
-    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+    testImplementation 'org.junit.platform:junit-platform-launcher'
+    testImplementation 'com.tngtech.archunit:archunit-junit5:1.0.1'
 }
 
 tasks.withType(JavaCompile) {
@@ -54,6 +55,7 @@ tasks.register('unitTest', Test) {
 	useJUnitPlatform {
 		includeTags 'unit'
 		excludeTags 'e2e'
+		excludeTags 'arch'
 	}
 
 	shouldRunAfter test
@@ -66,9 +68,23 @@ tasks.register('e2eTest', Test) {
 	useJUnitPlatform {
 		includeTags 'e2e'
 		excludeTags 'unit'
+		excludeTags 'arch'
 	}
 
 	shouldRunAfter test, unitTest
+}
+
+tasks.register('archTest', Test) {
+	description = 'Runs only architecture tests'
+	group = 'verification'
+
+	useJUnitPlatform {
+		includeTags 'arch'
+		excludeTags 'unit'
+		excludeTags 'e2e'
+	}
+
+	shouldRunAfter test, unitTest, e2eTest
 }
 
 def jacocoExecutionFiles = [
