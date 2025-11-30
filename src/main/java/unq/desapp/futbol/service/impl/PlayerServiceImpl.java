@@ -22,7 +22,7 @@ public class PlayerServiceImpl implements PlayerService {
 
     @Override
     public Mono<PlayerPerformance> getPlayerPerformance(String playerName, User user) {
-        return scrapingService.getPlayerPerformance(playerName).doOnSuccess(performance -> {
+        return scrapingService.findPlayerPerformance(playerName).doOnSuccess(performance -> {
             if (performance != null && user != null) {
                 user.addSearchHistory(SearchType.PLAYER, playerName);
                 userService.saveUser(user);

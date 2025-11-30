@@ -503,7 +503,7 @@ class TeamControllerTest {
                                         "Real Madrid", "Atletico Madrid", previousMatches,
                                         "Victory for Real Madrid");
 
-                        when(teamService.predictNextMatch(expectedTeamName, country, testUser))
+                        when(teamService.getNextMatchPrediction(expectedTeamName, country, testUser))
                                         .thenReturn(Mono.just(expectedPrediction));
 
                         // Act
@@ -521,7 +521,7 @@ class TeamControllerTest {
                                         })
                                         .verifyComplete();
 
-                        verify(teamService).predictNextMatch(expectedTeamName, country, testUser);
+                        verify(teamService).getNextMatchPrediction(expectedTeamName, country, testUser);
                 }
 
                 @Test
@@ -531,7 +531,7 @@ class TeamControllerTest {
                         String country = "Italy";
                         String teamName = "inter";
 
-                        when(teamService.predictNextMatch(anyString(), anyString(), any(User.class)))
+                        when(teamService.getNextMatchPrediction(anyString(), anyString(), any(User.class)))
                                         .thenReturn(Mono.empty());
 
                         // Act
@@ -551,7 +551,7 @@ class TeamControllerTest {
                         // Arrange
                         String country = "Portugal";
                         String teamName = "porto";
-                        when(teamService.predictNextMatch(anyString(), anyString(), any(User.class)))
+                        when(teamService.getNextMatchPrediction(anyString(), anyString(), any(User.class)))
                                         .thenReturn(Mono.error(new RuntimeException("Prediction service failed")));
 
                         // Act & Assert

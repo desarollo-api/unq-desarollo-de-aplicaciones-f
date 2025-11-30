@@ -44,7 +44,7 @@ class PlayerServiceImplTest {
         List<SeasonPerformance> seasons = Arrays.asList(season1, season2);
         PlayerPerformance expectedPerformance = new PlayerPerformance(playerName, seasons);
 
-        when(scrapingService.getPlayerPerformance(playerName)).thenReturn(Mono.just(expectedPerformance));
+        when(scrapingService.findPlayerPerformance(playerName)).thenReturn(Mono.just(expectedPerformance));
 
         // Act & Assert
         StepVerifier.create(playerService.getPlayerPerformance(playerName, testUser))
@@ -58,7 +58,7 @@ class PlayerServiceImplTest {
                 })
                 .verifyComplete();
 
-        verify(scrapingService, times(1)).getPlayerPerformance(playerName);
+        verify(scrapingService, times(1)).findPlayerPerformance(playerName);
     }
 
     @Test
@@ -70,7 +70,7 @@ class PlayerServiceImplTest {
         List<SeasonPerformance> seasons = Collections.singletonList(season);
         PlayerPerformance expectedPerformance = new PlayerPerformance(playerName, seasons);
 
-        when(scrapingService.getPlayerPerformance(playerName)).thenReturn(Mono.just(expectedPerformance));
+        when(scrapingService.findPlayerPerformance(playerName)).thenReturn(Mono.just(expectedPerformance));
 
         // Act & Assert
         StepVerifier.create(playerService.getPlayerPerformance(playerName, null))
@@ -81,7 +81,7 @@ class PlayerServiceImplTest {
                 })
                 .verifyComplete();
 
-        verify(scrapingService, times(1)).getPlayerPerformance(playerName);
+        verify(scrapingService, times(1)).findPlayerPerformance(playerName);
     }
 
     @Test
@@ -89,13 +89,13 @@ class PlayerServiceImplTest {
         // Arrange
         String playerName = "Unknown Player";
 
-        when(scrapingService.getPlayerPerformance(playerName)).thenReturn(Mono.empty());
+        when(scrapingService.findPlayerPerformance(playerName)).thenReturn(Mono.empty());
 
         // Act & Assert
         StepVerifier.create(playerService.getPlayerPerformance(playerName, testUser))
                 .verifyComplete();
 
-        verify(scrapingService, times(1)).getPlayerPerformance(playerName);
+        verify(scrapingService, times(1)).findPlayerPerformance(playerName);
         assertThat(testUser.getSearchHistory()).isEmpty();
     }
 
@@ -105,7 +105,7 @@ class PlayerServiceImplTest {
         String playerName = "Test Player";
         RuntimeException expectedException = new RuntimeException("Player data not found");
 
-        when(scrapingService.getPlayerPerformance(playerName)).thenReturn(Mono.error(expectedException));
+        when(scrapingService.findPlayerPerformance(playerName)).thenReturn(Mono.error(expectedException));
 
         // Act & Assert
         StepVerifier.create(playerService.getPlayerPerformance(playerName, testUser))
@@ -114,6 +114,6 @@ class PlayerServiceImplTest {
                                 && error.getMessage().equals("Player data not found"))
                 .verify();
 
-        verify(scrapingService, times(1)).getPlayerPerformance(playerName);
+        verify(scrapingService, times(1)).findPlayerPerformance(playerName);
     }
 }

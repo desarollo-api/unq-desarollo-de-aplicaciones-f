@@ -13,6 +13,7 @@ import org.junit.jupiter.api.Test;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 import unq.desapp.futbol.model.MatchPrediction;
+import unq.desapp.futbol.model.TeamComparison;
 import unq.desapp.futbol.model.TeamStats;
 import unq.desapp.futbol.model.Player;
 import unq.desapp.futbol.model.PreviousMatch;
@@ -44,7 +45,7 @@ class TeamServiceImplTest {
                 List<Player> expectedPlayers = List.of(player1, player2, player3);
 
                 ScrapingService scrapingService = mock(ScrapingService.class);
-                when(scrapingService.getTeamSquad(teamName, country))
+                when(scrapingService.findTeamSquad(teamName, country))
                                 .thenReturn(Mono.just(expectedPlayers));
 
                 TeamServiceImpl teamService = new TeamServiceImpl(scrapingService, userService);
@@ -62,7 +63,7 @@ class TeamServiceImplTest {
                                 })
                                 .verifyComplete();
 
-                verify(scrapingService, times(1)).getTeamSquad(teamName, country);
+                verify(scrapingService, times(1)).findTeamSquad(teamName, country);
         }
 
         @Test
@@ -72,7 +73,7 @@ class TeamServiceImplTest {
                 String country = "Argentina";
 
                 ScrapingService scrapingService = mock(ScrapingService.class);
-                when(scrapingService.getTeamSquad(teamName, country))
+                when(scrapingService.findTeamSquad(teamName, country))
                                 .thenReturn(Mono.just(Collections.emptyList()));
 
                 TeamServiceImpl teamService = new TeamServiceImpl(scrapingService, userService);
@@ -85,7 +86,7 @@ class TeamServiceImplTest {
                                 })
                                 .verifyComplete();
 
-                verify(scrapingService, times(1)).getTeamSquad(teamName, country);
+                verify(scrapingService, times(1)).findTeamSquad(teamName, country);
         }
 
         @Test
@@ -96,7 +97,7 @@ class TeamServiceImplTest {
                 RuntimeException expectedException = new RuntimeException("Scraping service error");
 
                 ScrapingService scrapingService = mock(ScrapingService.class);
-                when(scrapingService.getTeamSquad(teamName, country))
+                when(scrapingService.findTeamSquad(teamName, country))
                                 .thenReturn(Mono.error(expectedException));
 
                 TeamServiceImpl teamService = new TeamServiceImpl(scrapingService, userService);
@@ -107,7 +108,7 @@ class TeamServiceImplTest {
                                                 error.getMessage().equals("Scraping service error"))
                                 .verify();
 
-                verify(scrapingService, times(1)).getTeamSquad(teamName, country);
+                verify(scrapingService, times(1)).findTeamSquad(teamName, country);
         }
 
         @Test
@@ -124,7 +125,7 @@ class TeamServiceImplTest {
                 List<UpcomingMatch> expectedMatches = Arrays.asList(match1, match2, match3);
 
                 ScrapingService scrapingService = mock(ScrapingService.class);
-                when(scrapingService.getUpcomingMatches(teamName, country))
+                when(scrapingService.findUpcomingMatches(teamName, country))
                                 .thenReturn(Mono.just(expectedMatches));
 
                 TeamServiceImpl teamService = new TeamServiceImpl(scrapingService, userService);
@@ -142,7 +143,7 @@ class TeamServiceImplTest {
                                 })
                                 .verifyComplete();
 
-                verify(scrapingService, times(1)).getUpcomingMatches(teamName, country);
+                verify(scrapingService, times(1)).findUpcomingMatches(teamName, country);
         }
 
         @Test
@@ -152,7 +153,7 @@ class TeamServiceImplTest {
                 String country = "Argentina";
 
                 ScrapingService scrapingService = mock(ScrapingService.class);
-                when(scrapingService.getUpcomingMatches(teamName, country))
+                when(scrapingService.findUpcomingMatches(teamName, country))
                                 .thenReturn(Mono.just(Collections.emptyList()));
 
                 TeamServiceImpl teamService = new TeamServiceImpl(scrapingService, userService);
@@ -165,7 +166,7 @@ class TeamServiceImplTest {
                                 })
                                 .verifyComplete();
 
-                verify(scrapingService, times(1)).getUpcomingMatches(teamName, country);
+                verify(scrapingService, times(1)).findUpcomingMatches(teamName, country);
         }
 
         @Test
@@ -176,7 +177,7 @@ class TeamServiceImplTest {
                 RuntimeException expectedException = new RuntimeException("Network error");
 
                 ScrapingService scrapingService = mock(ScrapingService.class);
-                when(scrapingService.getUpcomingMatches(teamName, country))
+                when(scrapingService.findUpcomingMatches(teamName, country))
                                 .thenReturn(Mono.error(expectedException));
 
                 TeamServiceImpl teamService = new TeamServiceImpl(scrapingService, userService);
@@ -187,7 +188,7 @@ class TeamServiceImplTest {
                                                 error.getMessage().equals("Network error"))
                                 .verify();
 
-                verify(scrapingService, times(1)).getUpcomingMatches(teamName, country);
+                verify(scrapingService, times(1)).findUpcomingMatches(teamName, country);
         }
 
         @Test
@@ -200,7 +201,7 @@ class TeamServiceImplTest {
                 List<Player> expectedPlayers = Collections.singletonList(player);
 
                 ScrapingService scrapingService = mock(ScrapingService.class);
-                when(scrapingService.getTeamSquad(teamName, country))
+                when(scrapingService.findTeamSquad(teamName, country))
                                 .thenReturn(Mono.just(expectedPlayers));
 
                 TeamServiceImpl teamService = new TeamServiceImpl(scrapingService, userService);
@@ -214,7 +215,7 @@ class TeamServiceImplTest {
                                 })
                                 .verifyComplete();
 
-                verify(scrapingService, times(1)).getTeamSquad(teamName, country);
+                verify(scrapingService, times(1)).findTeamSquad(teamName, country);
         }
 
         @Test
@@ -227,7 +228,7 @@ class TeamServiceImplTest {
                 List<Player> expectedPlayers = Collections.singletonList(player);
 
                 ScrapingService scrapingService = mock(ScrapingService.class);
-                when(scrapingService.getTeamSquad(teamName, country))
+                when(scrapingService.findTeamSquad(teamName, country))
                                 .thenReturn(Mono.just(expectedPlayers));
 
                 TeamServiceImpl teamService = new TeamServiceImpl(scrapingService, userService);
@@ -242,7 +243,7 @@ class TeamServiceImplTest {
                                 .expectNextMatches(players -> players.size() == 1)
                                 .verifyComplete();
 
-                verify(scrapingService, times(2)).getTeamSquad(teamName, country);
+                verify(scrapingService, times(2)).findTeamSquad(teamName, country);
         }
 
         @Test
@@ -256,7 +257,7 @@ class TeamServiceImplTest {
                 List<UpcomingMatch> expectedMatches = Collections.singletonList(match);
 
                 ScrapingService scrapingService = mock(ScrapingService.class);
-                when(scrapingService.getUpcomingMatches(teamName, country))
+                when(scrapingService.findUpcomingMatches(teamName, country))
                                 .thenReturn(Mono.just(expectedMatches));
 
                 TeamServiceImpl teamService = new TeamServiceImpl(scrapingService, userService);
@@ -271,7 +272,7 @@ class TeamServiceImplTest {
                                 .expectNextMatches(matches -> matches.size() == 1)
                                 .verifyComplete();
 
-                verify(scrapingService, times(2)).getUpcomingMatches(teamName, country);
+                verify(scrapingService, times(2)).findUpcomingMatches(teamName, country);
         }
 
         @Test
@@ -284,7 +285,7 @@ class TeamServiceImplTest {
                 List<Player> expectedPlayers = Collections.singletonList(player);
 
                 ScrapingService scrapingService = mock(ScrapingService.class);
-                when(scrapingService.getTeamSquad(teamName, country))
+                when(scrapingService.findTeamSquad(teamName, country))
                                 .thenReturn(Mono.just(expectedPlayers));
 
                 TeamServiceImpl teamService = new TeamServiceImpl(scrapingService, userService);
@@ -300,7 +301,7 @@ class TeamServiceImplTest {
                                 })
                                 .verifyComplete();
 
-                verify(scrapingService, times(1)).getTeamSquad(teamName, country);
+                verify(scrapingService, times(1)).findTeamSquad(teamName, country);
         }
 
         @Test
@@ -313,7 +314,7 @@ class TeamServiceImplTest {
                 List<UpcomingMatch> expectedMatches = Collections.singletonList(match);
 
                 ScrapingService scrapingService = mock(ScrapingService.class);
-                when(scrapingService.getUpcomingMatches(teamName, country))
+                when(scrapingService.findUpcomingMatches(teamName, country))
                                 .thenReturn(Mono.just(expectedMatches));
 
                 TeamServiceImpl teamService = new TeamServiceImpl(scrapingService, userService);
@@ -328,7 +329,7 @@ class TeamServiceImplTest {
                                 })
                                 .verifyComplete();
 
-                verify(scrapingService, times(1)).getUpcomingMatches(teamName, country);
+                verify(scrapingService, times(1)).findUpcomingMatches(teamName, country);
         }
 
         // Tests for predictNextMatch method
@@ -354,7 +355,7 @@ class TeamServiceImplTest {
                 TeamServiceImpl teamService = new TeamServiceImpl(scrapingService, userService);
 
                 // Act & Assert
-                StepVerifier.create(teamService.predictNextMatch(teamName, country, testUser))
+                StepVerifier.create(teamService.getNextMatchPrediction(teamName, country, testUser))
                                 .expectNextMatches(prediction -> {
                                         assertThat(prediction).isNotNull();
                                         assertThat(prediction.getHomeTeam()).isEqualTo("River Plate");
@@ -385,7 +386,7 @@ class TeamServiceImplTest {
                 TeamServiceImpl teamService = new TeamServiceImpl(scrapingService, userService);
 
                 // Act & Assert
-                StepVerifier.create(teamService.predictNextMatch(teamName, country, null))
+                StepVerifier.create(teamService.getNextMatchPrediction(teamName, country, null))
                                 .expectNextMatches(prediction -> {
                                         assertThat(prediction).isNotNull();
                                         assertThat(prediction.getHomeTeam()).isEqualTo("Barcelona");
@@ -409,7 +410,7 @@ class TeamServiceImplTest {
                 TeamServiceImpl teamService = new TeamServiceImpl(scrapingService, userService);
 
                 // Act & Assert
-                StepVerifier.create(teamService.predictNextMatch(teamName, country, testUser))
+                StepVerifier.create(teamService.getNextMatchPrediction(teamName, country, testUser))
                                 .verifyComplete();
 
                 verify(scrapingService, times(1)).predictNextMatch(teamName, country);
@@ -429,7 +430,7 @@ class TeamServiceImplTest {
                 TeamServiceImpl teamService = new TeamServiceImpl(scrapingService, userService);
 
                 // Act & Assert
-                StepVerifier.create(teamService.predictNextMatch(teamName, country, testUser))
+                StepVerifier.create(teamService.getNextMatchPrediction(teamName, country, testUser))
                                 .expectErrorMatches(error -> error instanceof RuntimeException &&
                                                 error.getMessage().equals("Prediction service error"))
                                 .verify();
@@ -445,11 +446,12 @@ class TeamServiceImplTest {
                 String teamName = "River Plate";
                 String country = "Argentina";
                 TeamStats expectedStats = new TeamStats(teamName, country);
-                expectedStats.setSquadSize(25);
                 expectedStats.setAverageAge(28.5);
+                expectedStats.setWins(10);
+                expectedStats.setBestPlayer("Franco Armani");
 
                 ScrapingService scrapingService = mock(ScrapingService.class);
-                when(scrapingService.getTeamStats(teamName, country)).thenReturn(Mono.just(expectedStats));
+                when(scrapingService.findTeamStats(teamName, country)).thenReturn(Mono.just(expectedStats));
 
                 TeamServiceImpl teamService = new TeamServiceImpl(scrapingService, userService);
 
@@ -457,14 +459,15 @@ class TeamServiceImplTest {
                 StepVerifier.create(teamService.getSingleTeamStats(teamName, country, testUser))
                                 .expectNextMatches(stats -> {
                                         assertThat(stats).isNotNull();
-                                        assertThat(stats.getTeamName()).isEqualTo(teamName);
-                                        assertThat(stats.getSquadSize()).isEqualTo(25);
+                                        assertThat(stats.getBestPlayer()).isEqualTo("Franco Armani");
+                                        assertThat(stats.getWins()).isEqualTo(10);
+                                        assertThat(stats.getAverageAge()).isEqualTo(28.5);
                                         assertThat(testUser.getSearchHistory()).hasSize(1);
                                         return true;
                                 })
                                 .verifyComplete();
 
-                verify(scrapingService, times(1)).getTeamStats(teamName, country);
+                verify(scrapingService, times(1)).findTeamStats(teamName, country);
         }
 
         // Tests for compareTeams
@@ -472,31 +475,36 @@ class TeamServiceImplTest {
         @Test
         void shouldReturnTeamComparisonWhenScrapingServiceReturnsSquads() {
                 // Arrange
-                String teamNameA = "River Plate";
-                String countryA = "Argentina";
-                String teamNameB = "Boca Juniors";
-                String countryB = "Argentina";
+                TeamStats statsA = new TeamStats("River Plate", "Argentina");
+                statsA.setAverageRating(7.5);
+                statsA.setWinRate(60.0);
+                statsA.setAverageAge(28.0);
+                statsA.setBestPlayer("Player A");
 
-                Player playerA = new Player("Franco Armani", 37, "Argentina", "Goalkeeper", 7.5, 30, 0, 0, 0, 2);
-                Player playerB = new Player("Edinson Cavani", 37, "Uruguay", "Forward", 7.2, 20, 10, 2, 0, 1);
-
-                List<Player> squadA = Collections.singletonList(playerA);
-                List<Player> squadB = Collections.singletonList(playerB);
+                TeamStats statsB = new TeamStats("Boca Juniors", "Argentina");
+                statsB.setAverageRating(7.1);
+                statsB.setWinRate(50.0);
+                statsB.setAverageAge(29.5);
+                statsB.setBestPlayer("Player B");
 
                 ScrapingService scrapingService = mock(ScrapingService.class);
-                when(scrapingService.getTeamSquad(teamNameA, countryA)).thenReturn(Mono.just(squadA));
-                when(scrapingService.getTeamSquad(teamNameB, countryB)).thenReturn(Mono.just(squadB));
+                when(scrapingService.findTeamStats("River Plate", "Argentina")).thenReturn(Mono.just(statsA));
+                when(scrapingService.findTeamStats("Boca Juniors", "Argentina")).thenReturn(Mono.just(statsB));
 
                 TeamServiceImpl teamService = new TeamServiceImpl(scrapingService, userService);
 
                 // Act & Assert
-                StepVerifier.create(teamService.compareTeams(teamNameA, countryA, teamNameB, countryB, testUser))
+                StepVerifier.create(teamService.getTeamsComparasion("River Plate", "Argentina", "Boca Juniors",
+                                "Argentina", testUser))
                                 .expectNextMatches(comparison -> {
                                         assertThat(comparison).isNotNull();
-                                        assertThat(comparison.getTeamA().getTeamName()).isEqualTo(teamNameA);
-                                        assertThat(comparison.getTeamB().getTeamName()).isEqualTo(teamNameB);
-                                        assertThat(comparison.getTeamA().getAverageRating()).isEqualTo(7.5);
-                                        assertThat(comparison.getTeamB().getTotalGoals()).isEqualTo(10);
+                                        assertThat(comparison.getTeamA().getTeamName()).isEqualTo("River Plate");
+                                        assertThat(comparison.getTeamB().getTeamName()).isEqualTo("Boca Juniors");
+                                        assertThat(comparison.getTeamA().getAverageRating())
+                                                        .isEqualTo("Higher average rating (7.5 vs 7.1)");
+                                        assertThat(comparison.getTeamB().getWinRate())
+                                                        .isEqualTo("Lower win rate (50.0 vs 60.0)%");
+                                        assertThat(comparison.getVerdict()).contains("seems superior");
                                         assertThat(testUser.getSearchHistory()).hasSize(1);
                                         return true;
                                 })

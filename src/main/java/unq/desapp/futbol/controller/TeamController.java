@@ -13,6 +13,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import reactor.core.publisher.Mono;
+import unq.desapp.futbol.model.TeamComparisonResponse;
 import unq.desapp.futbol.model.UpcomingMatch;
 import unq.desapp.futbol.model.MatchPrediction;
 import unq.desapp.futbol.model.TeamStats;
@@ -83,7 +84,7 @@ public class TeamController {
                         @AuthenticationPrincipal User user) {
 
                 String teamName = name.replace('-', ' ');
-                return teamService.predictNextMatch(teamName, country, user)
+                return teamService.getNextMatchPrediction(teamName, country, user)
                                 .map(ResponseEntity::ok)
                                 .defaultIfEmpty(ResponseEntity.notFound().build());
         }
@@ -109,11 +110,11 @@ public class TeamController {
         @GetMapping("/compare/{countryA}/{nameA}/vs/{countryB}/{nameB}")
         @Operation(summary = "Compare two teams", description = "Provides a side-by-side comparison of two teams based on their squad statistics. This action is recorded in the user's search history.")
         @ApiResponses(value = {
-                        @ApiResponse(responseCode = "200", description = "Successfully generated comparison", content = @Content(mediaType = "application/json", schema = @Schema(implementation = TeamComparison.class))),
+                        @ApiResponse(responseCode = "200", description = "Successfully generated comparison", content = @Content(mediaType = "application/json", schema = @Schema(implementation = TeamComparisonResponse.class))),
                         @ApiResponse(responseCode = "401", description = "Unauthorized - JWT token is missing or invalid", content = @Content),
                         @ApiResponse(responseCode = "404", description = "One or both teams not found", content = @Content)
         })
-        public Mono<ResponseEntity<TeamComparison>> compareTeams(
+        public Mono<ResponseEntity<TeamComparisonResponse>> compareTeams(
                         @Parameter(description = "Country of the first team", required = true) @PathVariable String countryA,
                         @Parameter(description = "Name of the first team", required = true) @PathVariable String nameA,
                         @Parameter(description = "Country of the second team", required = true) @PathVariable String countryB,
@@ -122,7 +123,7 @@ public class TeamController {
 
                 String teamNameA = nameA.replace('-', ' ');
                 String teamNameB = nameB.replace('-', ' ');
-                return teamService.compareTeams(teamNameA, countryA, teamNameB, countryB, user)
+                return teamService.getTeamsComparasion(teamNameA, countryA, teamNameB, countryB, user)
                                 .map(ResponseEntity::ok)
                                 .defaultIfEmpty(ResponseEntity.notFound().build());
         }

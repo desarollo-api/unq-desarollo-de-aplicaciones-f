@@ -9,13 +9,13 @@ import unq.desapp.futbol.model.PlayerPerformance;
 import java.util.List;
 
 public interface ScrapingService {
-    Mono<List<Player>> getTeamSquad(String teamName, String country);
+    Mono<List<Player>> findTeamSquad(String teamName, String country);
 
-    Mono<List<UpcomingMatch>> getUpcomingMatches(String teamName, String country);
+    Mono<List<UpcomingMatch>> findUpcomingMatches(String teamName, String country);
 
-    Mono<PlayerPerformance> getPlayerPerformance(String playerName);
+    Mono<PlayerPerformance> findPlayerPerformance(String playerName);
+
+    Mono<TeamStats> findTeamStats(String teamName, String country);
 
     Mono<MatchPrediction> predictNextMatch(String teamName, String country);
-
-    Mono<TeamStats> getTeamStats(String teamName, String country);
 }

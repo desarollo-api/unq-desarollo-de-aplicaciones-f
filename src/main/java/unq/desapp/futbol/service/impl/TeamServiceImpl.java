@@ -5,8 +5,9 @@ import org.springframework.stereotype.Service;
 import reactor.core.publisher.Mono;
 import unq.desapp.futbol.model.MatchPrediction;
 import unq.desapp.futbol.model.Player;
+import unq.desapp.futbol.model.TeamComparisonDetails;
+import unq.desapp.futbol.model.TeamComparisonResponse;
 import unq.desapp.futbol.model.SearchType;
-import unq.desapp.futbol.model.TeamComparison;
 import unq.desapp.futbol.model.TeamStats;
 import unq.desapp.futbol.model.UpcomingMatch;
 import unq.desapp.futbol.model.User;
@@ -27,7 +28,7 @@ public class TeamServiceImpl implements TeamService {
 
     @Override
     public Mono<List<Player>> getTeamSquad(String teamName, String country, User user) {
-        return scrapingService.getTeamSquad(teamName, country).doOnSuccess(squad -> {
+        return scrapingService.findTeamSquad(teamName, country).doOnSuccess(squad -> {
             if (squad != null && !squad.isEmpty() && user != null) {
                 user.addSearchHistory(SearchType.TEAM, teamName + " (" + country + ")");
                 userService.saveUser(user);
@@ -37,7 +38,7 @@ public class TeamServiceImpl implements TeamService {
 
     @Override
     public Mono<List<UpcomingMatch>> getUpcomingMatches(String teamName, String country, User user) {
-        return scrapingService.getUpcomingMatches(teamName, country).doOnSuccess(matches -> {
+        return scrapingService.findUpcomingMatches(teamName, country).doOnSuccess(matches -> {
             if (matches != null && !matches.isEmpty() && user != null) {
                 user.addSearchHistory(SearchType.TEAM, teamName + " (" + country + ")");
                 userService.saveUser(user);
@@ -46,14 +47,14 @@ public class TeamServiceImpl implements TeamService {
     }
 
     @Override
-    public Mono<MatchPrediction> predictNextMatch(String teamName, String country, User user) {
+    public Mono<MatchPrediction> getNextMatchPrediction(String teamName, String country, User user) {
         return scrapingService.predictNextMatch(teamName, country);
     }
 
     @Override
     public Mono<TeamStats> getSingleTeamStats(String teamName, String country, User user) {
-        return scrapingService.getTeamStats(teamName, country).doOnSuccess(stats -> {
-            if (stats != null && stats.getSquadSize() > 0 && user != null) {
+        return scrapingService.findTeamStats(teamName, country).doOnSuccess(stats -> {
+            if (stats != null && stats.getBestPlayer() != null && user != null) {
                 String query = String.format("%s (%s) stats", teamName, country);
                 user.addSearchHistory(SearchType.TEAM, query);
                 userService.saveUser(user);
@@ -62,21 +63,18 @@ public class TeamServiceImpl implements TeamService {
     }
 
     @Override
-    public Mono<TeamComparison> compareTeams(String teamNameA, String countryA, String teamNameB, String countryB,
+    public Mono<TeamComparisonResponse> getTeamsComparasion(String teamNameA, String countryA, String teamNameB,
+            String countryB,
             User user) {
-        Mono<List<Player>> squadA = scrapingService.getTeamSquad(teamNameA, countryA);
-        Mono<List<Player>> squadB = scrapingService.getTeamSquad(teamNameB, countryB);
+        Mono<TeamStats> monoStatsA = scrapingService.findTeamStats(teamNameA, countryA);
+        Mono<TeamStats> monoStatsB = scrapingService.findTeamStats(teamNameB, countryB);
 
-        return Mono.zip(squadA, squadB).map(tuple -> {
-            List<Player> playersA = tuple.getT1();
-            List<Player> playersB = tuple.getT2();
+        return Mono.zip(monoStatsA, monoStatsB).map(tuple -> {
+            TeamStats teamStatsA = tuple.getT1();
+            TeamStats teamStatsB = tuple.getT2();
 
-            TeamStats statsA = calculateTeamStats(teamNameA, countryA, playersA);
-            TeamStats statsB = calculateTeamStats(teamNameB, countryB, playersB);
+            return buildComparisonResponse(teamStatsA, teamStatsB);
 
-            String verdict = generateVerdict(statsA, statsB);
-
-            return new TeamComparison(statsA, statsB, verdict);
         }).doOnSuccess(comparison -> {
             if (user != null) {
                 String query = String.format("%s (%s) vs %s (%s)", teamNameA, countryA, teamNameB, countryB);
@@ -86,38 +84,62 @@ public class TeamServiceImpl implements TeamService {
         });
     }
 
-    private TeamStats calculateTeamStats(String teamName, String country, List<Player> players) {
-        TeamStats stats = new TeamStats(teamName, country);
-        if (players == null || players.isEmpty()) {
-            return stats;
-        }
+    private TeamComparisonResponse buildComparisonResponse(TeamStats statsA, TeamStats statsB) {
+        TeamComparisonDetails detailsA = new TeamComparisonDetails(statsA.getTeamName(), statsA.getCountry());
+        TeamComparisonDetails detailsB = new TeamComparisonDetails(statsB.getTeamName(), statsB.getCountry());
 
-        stats.setSquadSize(players.size());
-        stats.setAverageAge(
-                players.stream().map(Player::getAge).filter(java.util.Objects::nonNull).mapToInt(a -> a).average()
-                        .orElse(0.0));
-        stats.setAverageRating(players.stream().map(Player::getRating).filter(java.util.Objects::nonNull)
-                .mapToDouble(r -> r).average().orElse(0.0));
-        stats.setTotalGoals(
-                players.stream().map(Player::getGoals).filter(java.util.Objects::nonNull).mapToInt(g -> g).sum());
-        stats.setTotalAssists(
-                players.stream().map(Player::getAssist).filter(java.util.Objects::nonNull).mapToInt(a -> a).sum());
+        // Comparar Average Age
+        detailsA.setAverageAge(
+                compareAndDescribe(statsA.getAverageAge(), statsB.getAverageAge(), "average age", false));
+        detailsB.setAverageAge(
+                compareAndDescribe(statsB.getAverageAge(), statsA.getAverageAge(), "average age", false));
 
-        return stats;
+        // Comparar Average Rating
+        detailsA.setAverageRating(
+                compareAndDescribe(statsA.getAverageRating(), statsB.getAverageRating(), "average rating", true));
+        detailsB.setAverageRating(
+                compareAndDescribe(statsB.getAverageRating(), statsA.getAverageRating(), "average rating", true));
+
+        // Comparar Win Rate
+        detailsA.setWinRate(compareAndDescribe(statsA.getWinRate(), statsB.getWinRate(), "win rate", true) + "%");
+        detailsB.setWinRate(compareAndDescribe(statsB.getWinRate(), statsA.getWinRate(), "win rate", true) + "%");
+
+        detailsA.setBestPlayer(statsA.getBestPlayer());
+        detailsB.setBestPlayer(statsB.getBestPlayer());
+
+        String verdict = generateVerdict(statsA, statsB);
+
+        return new TeamComparisonResponse(detailsA, detailsB, verdict);
+    }
+
+    private String compareAndDescribe(double valueA, double valueB, String metric, boolean higherIsBetter) {
+        String comparison = (valueA > valueB) ? (higherIsBetter ? "Higher" : "Lower")
+                : (valueA < valueB ? (higherIsBetter ? "Lower" : "Higher") : "Same");
+        return String.format("%s %s (%.1f vs %.1f)", comparison, metric, valueA, valueB);
     }
 
     private String generateVerdict(TeamStats statsA, TeamStats statsB) {
         double ratingDiff = statsA.getAverageRating() - statsB.getAverageRating();
-        int goalsDiff = statsA.getTotalGoals() - statsB.getTotalGoals();
+        double winRateDiff = statsA.getWinRate() - statsB.getWinRate();
 
-        if (Math.abs(ratingDiff) < 0.1) {
-            return "Ambos equipos parecen tener un nivel muy similar.";
-        } else if (ratingDiff > 0 && goalsDiff > 0) {
-            return String.format("%s parece superior, con un mejor rating promedio y más goles en su plantilla.",
+        if (Math.abs(ratingDiff) < 0.1 && Math.abs(winRateDiff) < 2) {
+            return "Both teams seem to have a very similar level in rating and win rate.";
+        }
+
+        if (ratingDiff > 0.2 && winRateDiff > 5) {
+            return String.format(
+                    "%s seems superior, with a noticeably higher average rating and win rate.",
                     statsA.getTeamName());
-        } else {
-            return String.format("%s parece superior, con un mejor rating promedio y más goles en su plantilla.",
+        } else if (ratingDiff < -0.2 && winRateDiff < -5) {
+            return String.format(
+                    "%s seems superior, with a noticeably higher average rating and win rate.",
                     statsB.getTeamName());
+        } else {
+            String betterRatingTeam = ratingDiff > 0 ? statsA.getTeamName() : statsB.getTeamName();
+            String betterWinRateTeam = winRateDiff > 0 ? statsA.getTeamName() : statsB.getTeamName();
+            return String.format(
+                    "The comparison is close. %s has a better average rating, while %s has a higher win rate.",
+                    betterRatingTeam, betterWinRateTeam);
         }
     }
 }
