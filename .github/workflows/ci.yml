@@ -132,8 +132,12 @@ jobs:
         path: build/jacoco/
       continue-on-error: true
 
-    - name: Generate & Verify Coverage
-      run: ./gradlew jacocoTestReport jacocoTestCoverageVerification
+    - name: Generate Coverage Report
+      run: ./gradlew jacocoTestReport
+
+    - name: Verify Coverage
+      if: needs.e2e-tests.result == 'success'
+      run: ./gradlew jacocoTestCoverageVerification
 
     - name: Upload Coverage Report
       uses: actions/upload-artifact@v4
