@@ -6,6 +6,10 @@ import com.tngtech.archunit.lang.ArchRule;
 
 import com.tngtech.archunit.core.importer.ImportOption;
 
+import org.springframework.stereotype.Repository;
+import org.springframework.stereotype.Service;
+import org.springframework.web.bind.annotation.RestController;
+
 import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.classes;
 
 import static com.tngtech.archunit.library.Architectures.layeredArchitecture;
@@ -47,5 +51,24 @@ public class ArchitectureTest {
             .that().resideInAPackage("..repository..")
             .and().areTopLevelClasses()
             .should().haveSimpleNameEndingWith("Repository");
+
+    @ArchTest
+    static final ArchRule controllers_should_be_annotated_with_rest_controller = classes()
+            .that().resideInAPackage("..webservice..")
+            .and().areTopLevelClasses()
+            .should().beAnnotatedWith(RestController.class);
+
+    @ArchTest
+    static final ArchRule services_should_be_annotated_with_service = classes()
+            .that().resideInAPackage("..service..")
+            .and().areTopLevelClasses()
+            .and().haveSimpleNameEndingWith("ServiceImpl")
+            .should().beAnnotatedWith(Service.class);
+
+    @ArchTest
+    static final ArchRule repositories_should_be_annotated_with_repository = classes()
+            .that().resideInAPackage("..repository..")
+            .and().areTopLevelClasses()
+            .should().beAnnotatedWith(Repository.class);
 
 }
