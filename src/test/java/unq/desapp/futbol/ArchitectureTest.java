@@ -21,26 +21,34 @@ public class ArchitectureTest {
         @ArchTest
         static final ArchRule layered_architecture = layeredArchitecture()
                         .consideringOnlyDependenciesInAnyPackage("unq.desapp.futbol..")
-                        .layer("Controller").definedBy("..webservice..")
-                        .layer("Service").definedBy("..service..")
-                        .layer("Repository").definedBy("..repository..")
-                        .layer("Security").definedBy("..security..")
+                        .layer("Controller").definedBy("..controller..", "..webservice..")
+                        .layer("Service Interfaces").definedBy("..service")
+                        .layer("Service Implementations").definedBy("..service.impl..")
+                        .layer("Repository").definedBy("..repository..", "..persistence..")
+                        .layer("Security").definedBy("..security..", "..auth..")
+                        .layer("Model").definedBy("..model..")
                         .whereLayer("Controller").mayNotBeAccessedByAnyLayer()
-                        .whereLayer("Service").mayOnlyBeAccessedByLayers("Controller", "Security")
-                        .whereLayer("Repository").mayOnlyBeAccessedByLayers("Service");
+                        .whereLayer("Service Implementations").mayOnlyBeAccessedByLayers("Controller", "Security")
+                        .whereLayer("Repository").mayOnlyBeAccessedByLayers("Service Implementations");
 
         @ArchTest
         static final ArchRule controllers_should_have_name_ending_with_controller = classes()
-                        .that().resideInAPackage("..webservice..")
+                        .that().resideInAPackage("..controller..")
                         .and().areTopLevelClasses()
                         .should().haveSimpleNameEndingWith("Controller");
 
         @ArchTest
         static final ArchRule services_should_have_name_ending_with_service = classes()
-                        .that().resideInAPackage("..service..")
+                        .that().resideInAPackage("..service")
                         .and().areTopLevelClasses()
-                        .should().haveSimpleNameEndingWith("Service")
-                        .orShould().haveSimpleNameEndingWith("ServiceImpl");
+                        .and().areInterfaces()
+                        .should().haveSimpleNameEndingWith("Service");
+
+        @ArchTest
+        static final ArchRule service_impls_should_have_name_ending_with_service_impl = classes()
+                        .that().resideInAPackage("..service.impl..")
+                        .and().areTopLevelClasses()
+                        .should().haveSimpleNameEndingWith("ServiceImpl");
 
         @ArchTest
         static final ArchRule repositories_should_have_name_ending_with_repository = classes()
@@ -50,16 +58,21 @@ public class ArchitectureTest {
 
         @ArchTest
         static final ArchRule controllers_should_be_annotated_with_rest_controller = classes()
-                        .that().resideInAPackage("..webservice..")
+                        .that().resideInAPackage("..controller..")
                         .and().areTopLevelClasses()
                         .should().beAnnotatedWith(RestController.class);
 
         @ArchTest
         static final ArchRule services_should_be_annotated_with_service = classes()
-                        .that().resideInAPackage("..service..")
+                        .that().resideInAPackage("..service.impl..")
                         .and().areTopLevelClasses()
-                        .and().areNotInterfaces()
                         .should().beAnnotatedWith(Service.class);
+
+        @ArchTest
+        static final ArchRule service_interfaces_should_not_be_annotated_with_service = classes()
+                        .that().resideInAPackage("..service")
+                        .and().areInterfaces()
+                        .should().notBeAnnotatedWith(Service.class);
 
         @ArchTest
         static final ArchRule repositories_should_be_annotated_with_repository = classes()
