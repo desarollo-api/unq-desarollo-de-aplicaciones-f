@@ -1,4 +1,4 @@
-package unq.desapp.futbol.webservice;
+package unq.desapp.futbol.controller;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -30,9 +30,8 @@ public class AuthController {
     private final JwtTokenProvider jwtTokenProvider;
 
     public AuthController(
-        UserService footballService,
-        JwtTokenProvider jwtTokenProvider
-    ) {
+            UserService footballService,
+            JwtTokenProvider jwtTokenProvider) {
         this.footballService = footballService;
         this.jwtTokenProvider = jwtTokenProvider;
     }
@@ -61,12 +60,12 @@ public class AuthController {
                 Role.USER // Assign default role
         );
         return Mono.fromCallable(() -> {
-                    try {
-                        return footballService.addUser(newUser);
-                    } catch (IllegalArgumentException e) {
-                        throw new ResponseStatusException(HttpStatus.BAD_REQUEST, e.getMessage());
-                    }
-                })
+            try {
+                return footballService.addUser(newUser);
+            } catch (IllegalArgumentException e) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, e.getMessage());
+            }
+        })
                 .map(this::buildResponse)
                 .map(authResponse -> new ResponseEntity<>(authResponse, HttpStatus.CREATED));
     }

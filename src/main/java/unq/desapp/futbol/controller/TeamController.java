@@ -1,4 +1,4 @@
-package unq.desapp.futbol.webservice;
+package unq.desapp.futbol.controller;
 
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
@@ -13,11 +13,13 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import reactor.core.publisher.Mono;
+import unq.desapp.futbol.model.TeamComparisonResponse;
 import unq.desapp.futbol.model.UpcomingMatch;
 import unq.desapp.futbol.model.MatchPrediction;
+import unq.desapp.futbol.model.TeamStats;
 import unq.desapp.futbol.model.Player;
 import unq.desapp.futbol.model.User;
-import unq.desapp.futbol.service.FootballDataService;
+import unq.desapp.futbol.service.TeamService;
 import java.util.List;
 
 @RestController
@@ -26,10 +28,10 @@ import java.util.List;
 @RequestMapping("/teams")
 public class TeamController {
 
-        private final FootballDataService footballDataService;
+        private final TeamService teamService;
 
-        public TeamController(FootballDataService footballDataService) {
-                this.footballDataService = footballDataService;
+        public TeamController(TeamService teamService) {
+                this.teamService = teamService;
         }
 
         @GetMapping("/{country}/{name}/squad")
@@ -45,7 +47,7 @@ public class TeamController {
                         @AuthenticationPrincipal User user) {
 
                 String teamName = name.replace('-', ' ');
-                return footballDataService.getTeamSquad(teamName, country, user)
+                return teamService.getTeamSquad(teamName, country, user)
                                 .map(ResponseEntity::ok)
                                 .defaultIfEmpty(ResponseEntity.notFound().build());
         }
@@ -63,7 +65,7 @@ public class TeamController {
                         @AuthenticationPrincipal User user) {
 
                 String teamName = name.replace('-', ' ');
-                return footballDataService.getUpcomingMatches(teamName, country, user)
+                return teamService.getUpcomingMatches(teamName, country, user)
                                 .map(ResponseEntity::ok)
                                 .defaultIfEmpty(ResponseEntity.notFound().build());
         }
@@ -81,7 +83,46 @@ public class TeamController {
                         @AuthenticationPrincipal User user) {
 
                 String teamName = name.replace('-', ' ');
-                return footballDataService.predictNextMatch(teamName, country, user)
+                return teamService.getNextMatchPrediction(teamName, country, user)
+                                .map(ResponseEntity::ok)
+                                .defaultIfEmpty(ResponseEntity.notFound().build());
+        }
+
+        @GetMapping("/{country}/{name}/stats")
+        @Operation(summary = "Get Team Statistics", description = "Returns aggregated statistics for a given team, based on its current squad and season performance. This action is recorded in the user's search history.")
+        @ApiResponses(value = {
+                        @ApiResponse(responseCode = "200", description = "Successfully retrieved team statistics", content = @Content(mediaType = "application/json", schema = @Schema(implementation = TeamStats.class))),
+                        @ApiResponse(responseCode = "401", description = "Unauthorized - JWT token is missing or invalid", content = @Content),
+                        @ApiResponse(responseCode = "404", description = "Team not found", content = @Content)
+        })
+        public Mono<ResponseEntity<TeamStats>> getTeamStats(
+                        @Parameter(description = "Country of the team", required = true, example = "England") @PathVariable String country,
+                        @Parameter(description = "Name of the team, use hyphens for spaces", required = true, example = "manchester-united") @PathVariable String name,
+                        @AuthenticationPrincipal User user) {
+
+                String teamName = name.replace('-', ' ');
+                return teamService.getSingleTeamStats(teamName, country, user)
+                                .map(ResponseEntity::ok)
+                                .defaultIfEmpty(ResponseEntity.notFound().build());
+        }
+
+        @GetMapping("/compare/{countryA}/{nameA}/vs/{countryB}/{nameB}")
+        @Operation(summary = "Compare two teams", description = "Provides a side-by-side comparison of two teams based on their squad statistics. This action is recorded in the user's search history.")
+        @ApiResponses(value = {
+                        @ApiResponse(responseCode = "200", description = "Successfully generated comparison", content = @Content(mediaType = "application/json", schema = @Schema(implementation = TeamComparisonResponse.class))),
+                        @ApiResponse(responseCode = "401", description = "Unauthorized - JWT token is missing or invalid", content = @Content),
+                        @ApiResponse(responseCode = "404", description = "One or both teams not found", content = @Content)
+        })
+        public Mono<ResponseEntity<TeamComparisonResponse>> compareTeams(
+                        @Parameter(description = "Country of the first team", required = true) @PathVariable String countryA,
+                        @Parameter(description = "Name of the first team", required = true) @PathVariable String nameA,
+                        @Parameter(description = "Country of the second team", required = true) @PathVariable String countryB,
+                        @Parameter(description = "Name of the second team", required = true) @PathVariable String nameB,
+                        @AuthenticationPrincipal User user) {
+
+                String teamNameA = nameA.replace('-', ' ');
+                String teamNameB = nameB.replace('-', ' ');
+                return teamService.getTeamsComparasion(teamNameA, countryA, teamNameB, countryB, user)
                                 .map(ResponseEntity::ok)
                                 .defaultIfEmpty(ResponseEntity.notFound().build());
         }

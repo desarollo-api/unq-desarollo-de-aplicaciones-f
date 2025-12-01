@@ -1,4 +1,4 @@
-package unq.desapp.futbol.webservice;
+package unq.desapp.futbol.controller;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;

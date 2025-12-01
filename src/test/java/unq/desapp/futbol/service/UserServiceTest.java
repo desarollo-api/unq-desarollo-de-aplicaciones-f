@@ -20,6 +20,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import unq.desapp.futbol.model.Role;
 import unq.desapp.futbol.model.User;
+import unq.desapp.futbol.service.impl.UserServiceImpl;
 import unq.desapp.futbol.repository.UserRepository;
 
 @ExtendWith(MockitoExtension.class)
@@ -37,7 +38,7 @@ class UserServiceTest {
 
     @BeforeEach
     void setUp() {
-        userService = new UserService(userRepository, passwordEncoder);
+        userService = new UserServiceImpl(userRepository, passwordEncoder);
     }
 
     @Test

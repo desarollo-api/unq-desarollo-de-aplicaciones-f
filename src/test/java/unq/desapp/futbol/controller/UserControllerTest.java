@@ -1,4 +1,4 @@
-package unq.desapp.futbol.webservice;
+package unq.desapp.futbol.controller;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import java.util.List;

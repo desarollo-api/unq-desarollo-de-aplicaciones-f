@@ -1,4 +1,4 @@
-package unq.desapp.futbol.service;
+package unq.desapp.futbol.service.impl;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -15,6 +15,8 @@ import org.springframework.util.StringUtils;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
 import unq.desapp.futbol.model.UpcomingMatch;
+import unq.desapp.futbol.service.ScrapingService;
+import unq.desapp.futbol.model.TeamStats;
 import unq.desapp.futbol.model.MatchPrediction;
 import unq.desapp.futbol.model.Player;
 import unq.desapp.futbol.model.PlayerPerformance;
@@ -26,6 +28,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -50,7 +53,7 @@ public class ScrapingServiceImpl implements ScrapingService {
     // TEAM SQUAD
 
     @Override
-    public Mono<List<Player>> getTeamSquad(String teamName, String country) {
+    public Mono<List<Player>> findTeamSquad(String teamName, String country) {
         return Mono.fromCallable(() -> fetchTeamSquadFromAPI(teamName, country))
                 .subscribeOn(Schedulers.boundedElastic())
                 .onErrorResume(e -> {
@@ -151,7 +154,7 @@ public class ScrapingServiceImpl implements ScrapingService {
     // PLAYER PERFORMANCE
 
     @Override
-    public Mono<PlayerPerformance> getPlayerPerformance(String playerName) {
+    public Mono<PlayerPerformance> findPlayerPerformance(String playerName) {
         return Mono.fromCallable(() -> fetchPlayerPerformanceFromAPI(playerName))
                 .subscribeOn(Schedulers.boundedElastic())
                 .onErrorResume(e -> {
@@ -239,7 +242,7 @@ public class ScrapingServiceImpl implements ScrapingService {
 
     // UPCOMING MATCHES
 
-    public Mono<List<UpcomingMatch>> getUpcomingMatches(String teamName, String country) {
+    public Mono<List<UpcomingMatch>> findUpcomingMatches(String teamName, String country) {
         return Mono.fromCallable(() -> scrapeUpcomingMatches(teamName, country))
                 .subscribeOn(Schedulers.boundedElastic())
                 .onErrorResume(e -> {
@@ -302,9 +305,9 @@ public class ScrapingServiceImpl implements ScrapingService {
     private List<List<Object>> buildFixtureMatches(Matcher dataMatcher) throws IOException {
         String dataJson = dataMatcher.group(1)
                 .replace("'", "\"")
-                .replaceAll("([\\{,]\\s*)(\\w+)(\\s*:)", "$1\"$2\"$3")
-                .replaceAll(",\\s*,", ",\"\",")
-                .replaceAll(",\\s*]", "]");
+                .replace("([\\{,]\\s*)(\\w+)(\\s*:)", "$1\"$2\"$3")
+                .replace(",\\s*,", ",\"\",")
+                .replace(",\\s*]", "]");
 
         JsonNode matchesNode = objectMapper.readTree(dataJson)
                 .path("fixtureMatches");
@@ -434,10 +437,10 @@ public class ScrapingServiceImpl implements ScrapingService {
         String json = matcher.group(1)
                 .replaceFirst("(?s)showLeagueTableStandings.*?homeMatches", "homeMatches")
                 .replace("'", "\"")
-                .replaceAll("([\\{,]\\s*)(\\w+)(\\s*:)", "$1\"$2\"$3")
-                .replaceAll(",\\s*,", ",\"\",")
-                .replaceAll(",\\s*]", "]")
-                .replaceAll(",\\s*}", "}");
+                .replace("([\\{,]\\s*)(\\w+)(\\s*:)", "$1\"$2\"$3")
+                .replace(",\\s*,", ",\"\",")
+                .replace(",\\s*]", "]")
+                .replace(",\\s*}", "}");
 
         return objectMapper.readTree(json);
     }
@@ -500,7 +503,7 @@ public class ScrapingServiceImpl implements ScrapingService {
             }
         }
 
-        return new int[]{teamWins, opponentWins};
+        return new int[] { teamWins, opponentWins };
     }
 
     private String formatPredictionResult(int teamWins, int opponentWins, String teamName) {
@@ -545,5 +548,90 @@ public class ScrapingServiceImpl implements ScrapingService {
         }
 
         return upcomingMatches;
+    }
+
+    // TEAM STATS
+
+    @Override
+    public Mono<TeamStats> findTeamStats(String teamName, String country) {
+        return Mono.fromCallable(() -> fetchTeamStats(teamName, country))
+                .subscribeOn(Schedulers.boundedElastic())
+                .onErrorResume(e -> {
+                    logger.error("Error fetching team stats for team: {} ({})", teamName, country, e);
+                    return Mono.empty();
+                });
+    }
+
+    private TeamStats fetchTeamStats(String teamName, String country) throws IOException {
+        // 1. Reutilizar la búsqueda del equipo para obtener su URL y su ID
+        TeamStats stats = new TeamStats(teamName, country);
+
+        // 2. Obtener plantilla de jugadores y calcular estadísticas basadas en ellos
+        List<Player> squad = findTeamSquad(teamName, country).block();
+        if (squad != null && !squad.isEmpty()) {
+            calculatePlayerBasedStats(stats, squad);
+        }
+
+        // 3. Obtener historial de partidos y calcular resultados
+        List<List<Object>> fixtureMatches = buildFixtureMatches(teamName, country);
+        if (!fixtureMatches.isEmpty()) {
+            calculateMatchResults(stats, fixtureMatches, teamName);
+        }
+
+        logger.info("Successfully generated stats for team '{}'", teamName);
+        return stats;
+    }
+
+    private void calculatePlayerBasedStats(TeamStats stats, List<Player> players) {
+        if (players == null || players.isEmpty()) {
+            return;
+        }
+
+        double averageAge = players.stream()
+                .map(Player::getAge).filter(java.util.Objects::nonNull)
+                .mapToInt(a -> a).average().orElse(0.0);
+        stats.setAverageAge(Math.round(averageAge * 10.0) / 10.0);
+
+        double averageRating = players.stream()
+                .map(Player::getRating).filter(java.util.Objects::nonNull)
+                .mapToDouble(r -> r).average().orElse(0.0);
+        stats.setAverageRating(Math.round(averageRating * 10.0) / 10.0);
+
+        players.stream()
+                .filter(p -> p.getRating() != null)
+                .max(Comparator.comparing(Player::getRating))
+                .ifPresent(p -> stats.setBestPlayer(p.getName()));
+    }
+
+    private void calculateMatchResults(TeamStats stats, List<List<Object>> fixtureMatches, String teamName) {
+        int wins = 0;
+        int draws = 0;
+        int defeats = 0;
+
+        for (List<Object> match : fixtureMatches) {
+            if (match.size() > 10 && !"vs".equals(match.get(10).toString())) { // Partido jugado
+                String homeTeam = match.get(5).toString();
+                String result = match.get(10).toString().replace("\\*", ""); // "1 : 0"
+                String[] scores = result.split(" : ");
+                int homeScore = Integer.parseInt(scores[0]);
+                int awayScore = Integer.parseInt(scores[1]);
+
+                boolean isHome = teamName.equalsIgnoreCase(homeTeam);
+                if (homeScore == awayScore)
+                    draws++;
+                else if ((isHome && homeScore > awayScore) || (!isHome && awayScore > homeScore))
+                    wins++;
+                else
+                    defeats++;
+            }
+        }
+        stats.setWins(wins);
+        stats.setDraws(draws);
+        stats.setDefeats(defeats);
+
+        int totalMatches = wins + draws + defeats;
+        if (totalMatches > 0) {
+            stats.setWinRate(Math.round(((double) wins / totalMatches) * 1000.0) / 10.0);
+        }
     }
 }

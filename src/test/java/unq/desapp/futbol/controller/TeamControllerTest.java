@@ -1,4 +1,4 @@
-package unq.desapp.futbol.webservice;
+package unq.desapp.futbol.controller;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
@@ -30,7 +30,7 @@ import unq.desapp.futbol.model.UpcomingMatch;
 import unq.desapp.futbol.model.Player;
 import unq.desapp.futbol.model.PreviousMatch;
 import unq.desapp.futbol.model.Role;
-import unq.desapp.futbol.service.FootballDataService;
+import unq.desapp.futbol.service.TeamService;
 import unq.desapp.futbol.model.User;
 
 @ExtendWith(MockitoExtension.class)
@@ -39,7 +39,7 @@ import unq.desapp.futbol.model.User;
 class TeamControllerTest {
 
         @Mock
-        private FootballDataService footballDataService;
+        private TeamService teamService;
 
         private TeamController teamController;
 
@@ -47,7 +47,7 @@ class TeamControllerTest {
 
         @BeforeEach
         void setUp() {
-                teamController = new TeamController(footballDataService);
+                teamController = new TeamController(teamService);
                 testUser = new User("test@user.com", "pass", "Test", "User", Role.USER);
         }
 
@@ -67,7 +67,7 @@ class TeamControllerTest {
                         Player player2 = createPlayer("Bruno Fernandes", 29, "Portugal", "Midfielder");
                         List<Player> expectedSquad = Arrays.asList(player1, player2);
 
-                        when(footballDataService.getTeamSquad(expectedTeamName, country, testUser))
+                        when(teamService.getTeamSquad(expectedTeamName, country, testUser))
                                         .thenReturn(Mono.just(expectedSquad));
 
                         // Act
@@ -87,7 +87,7 @@ class TeamControllerTest {
                                         })
                                         .verifyComplete();
 
-                        verify(footballDataService).getTeamSquad(expectedTeamName, country, testUser);
+                        verify(teamService).getTeamSquad(expectedTeamName, country, testUser);
                 }
 
                 @Test
@@ -98,7 +98,7 @@ class TeamControllerTest {
                         String teamNameWithMultipleHyphens = "real-madrid-cf";
                         String expectedTeamName = "real madrid cf";
 
-                        when(footballDataService.getTeamSquad(expectedTeamName, country, testUser))
+                        when(teamService.getTeamSquad(expectedTeamName, country, testUser))
                                         .thenReturn(Mono.just(Collections.emptyList()));
 
                         // Act
@@ -110,7 +110,7 @@ class TeamControllerTest {
                                         .expectNextCount(1)
                                         .verifyComplete();
 
-                        verify(footballDataService).getTeamSquad(expectedTeamName, country, testUser);
+                        verify(teamService).getTeamSquad(expectedTeamName, country, testUser);
                 }
 
                 @Test
@@ -121,7 +121,7 @@ class TeamControllerTest {
                         String teamName = "juventus";
                         Player player = createPlayer("Dusan Vlahovic", 24, "Serbia", "Forward");
 
-                        when(footballDataService.getTeamSquad(teamName, country, testUser))
+                        when(teamService.getTeamSquad(teamName, country, testUser))
                                         .thenReturn(Mono.just(Collections.singletonList(player)));
 
                         // Act
@@ -136,7 +136,7 @@ class TeamControllerTest {
                                         })
                                         .verifyComplete();
 
-                        verify(footballDataService).getTeamSquad(teamName, country, testUser);
+                        verify(teamService).getTeamSquad(teamName, country, testUser);
                 }
 
                 @Test
@@ -146,7 +146,7 @@ class TeamControllerTest {
                         String country = "France";
                         String teamName = "psg";
 
-                        when(footballDataService.getTeamSquad(teamName, country, testUser))
+                        when(teamService.getTeamSquad(teamName, country, testUser))
                                         .thenReturn(Mono.just(Collections.emptyList()));
 
                         // Act
@@ -175,7 +175,7 @@ class TeamControllerTest {
                         String country = "Germany";
                         String teamName = "bayern-munich";
 
-                        when(footballDataService.getTeamSquad(anyString(), anyString(), any(User.class)))
+                        when(teamService.getTeamSquad(anyString(), anyString(), any(User.class)))
                                         .thenReturn(Mono.empty());
 
                         // Act
@@ -199,7 +199,7 @@ class TeamControllerTest {
                         String teamName = "chelsea";
                         RuntimeException expectedException = new RuntimeException("Service unavailable");
 
-                        when(footballDataService.getTeamSquad(anyString(), anyString(), any(User.class)))
+                        when(teamService.getTeamSquad(anyString(), anyString(), any(User.class)))
                                         .thenReturn(Mono.error(expectedException));
 
                         // Act
@@ -235,7 +235,7 @@ class TeamControllerTest {
                                 assertThat(e).isInstanceOf(NullPointerException.class);
                         }
 
-                        verifyNoInteractions(footballDataService);
+                        verifyNoInteractions(teamService);
                 }
         }
 
@@ -250,7 +250,7 @@ class TeamControllerTest {
                         String country = "Côte d'Ivoire";
                         String teamName = "asec-mimosas";
 
-                        when(footballDataService.getTeamSquad(anyString(), eq(country), any(User.class)))
+                        when(teamService.getTeamSquad(anyString(), eq(country), any(User.class)))
                                         .thenReturn(Mono.just(Collections.emptyList()));
 
                         // Act
@@ -262,7 +262,7 @@ class TeamControllerTest {
                                         .expectNextCount(1)
                                         .verifyComplete();
 
-                        verify(footballDataService).getTeamSquad("asec mimosas", country, testUser);
+                        verify(teamService).getTeamSquad("asec mimosas", country, testUser);
                 }
 
                 @Test
@@ -273,7 +273,7 @@ class TeamControllerTest {
                         String teamName = "llanfairpwllgwyngyllgogerychwyrndrobwllllantysiliogogogoch-fc";
                         String expectedTeamName = teamName.replace('-', ' ');
 
-                        when(footballDataService.getTeamSquad(expectedTeamName, country, testUser))
+                        when(teamService.getTeamSquad(expectedTeamName, country, testUser))
                                         .thenReturn(Mono.just(Collections.emptyList()));
 
                         // Act
@@ -294,7 +294,7 @@ class TeamControllerTest {
                         String teamName = "1860-munich";
                         String expectedTeamName = "1860 munich";
 
-                        when(footballDataService.getTeamSquad(expectedTeamName, country, testUser))
+                        when(teamService.getTeamSquad(expectedTeamName, country, testUser))
                                         .thenReturn(Mono.just(Collections.emptyList()));
 
                         // Act
@@ -306,7 +306,7 @@ class TeamControllerTest {
                                         .expectNextCount(1)
                                         .verifyComplete();
 
-                        verify(footballDataService).getTeamSquad(expectedTeamName, country, testUser);
+                        verify(teamService).getTeamSquad(expectedTeamName, country, testUser);
                 }
 
                 @Test
@@ -317,7 +317,7 @@ class TeamControllerTest {
                         String teamName = "sao--paulo";
                         String expectedTeamName = "sao  paulo"; // Double space
 
-                        when(footballDataService.getTeamSquad(expectedTeamName, country, testUser))
+                        when(teamService.getTeamSquad(expectedTeamName, country, testUser))
                                         .thenReturn(Mono.just(Collections.emptyList()));
 
                         // Act
@@ -343,7 +343,7 @@ class TeamControllerTest {
                         String teamName = "arsenal";
                         List<Player> largeSquad = createLargeSquad(30);
 
-                        when(footballDataService.getTeamSquad(teamName, country, testUser))
+                        when(teamService.getTeamSquad(teamName, country, testUser))
                                         .thenReturn(Mono.just(largeSquad));
 
                         // Act
@@ -366,15 +366,15 @@ class TeamControllerTest {
                         String country = "Italy";
                         String teamName = "ac-milan";
 
-                        when(footballDataService.getTeamSquad(anyString(), anyString(), any(User.class)))
+                        when(teamService.getTeamSquad(anyString(), anyString(), any(User.class)))
                                         .thenReturn(Mono.just(Collections.emptyList()));
 
                         // Act
                         teamController.getSquadFromScraping(country, teamName, testUser).block();
 
                         // Assert
-                        verify(footballDataService, times(1)).getTeamSquad("ac milan", country, testUser);
-                        verifyNoMoreInteractions(footballDataService);
+                        verify(teamService, times(1)).getTeamSquad("ac milan", country, testUser);
+                        verifyNoMoreInteractions(teamService);
                 }
 
                 @Test
@@ -385,7 +385,7 @@ class TeamControllerTest {
                         String countryLowerCase = "england";
                         String teamName = "liverpool";
 
-                        when(footballDataService.getTeamSquad(anyString(), anyString(), any(User.class)))
+                        when(teamService.getTeamSquad(anyString(), anyString(), any(User.class)))
                                         .thenReturn(Mono.just(Collections.emptyList()));
 
                         // Act
@@ -393,8 +393,8 @@ class TeamControllerTest {
                         teamController.getSquadFromScraping(countryLowerCase, teamName, testUser).block();
 
                         // Assert
-                        verify(footballDataService).getTeamSquad(teamName, countryUpperCase, testUser);
-                        verify(footballDataService).getTeamSquad(teamName, countryLowerCase, testUser);
+                        verify(teamService).getTeamSquad(teamName, countryUpperCase, testUser);
+                        verify(teamService).getTeamSquad(teamName, countryLowerCase, testUser);
                 }
         }
 
@@ -440,7 +440,7 @@ class TeamControllerTest {
                                         new UpcomingMatch("2025-10-25", "Premier League", "Arsenal",
                                                         "Manchester United"));
 
-                        when(footballDataService.getUpcomingMatches(expectedTeamName, country, testUser))
+                        when(teamService.getUpcomingMatches(expectedTeamName, country, testUser))
                                         .thenReturn(Mono.just(expectedMatches));
 
                         // Act
@@ -458,7 +458,7 @@ class TeamControllerTest {
                                         })
                                         .verifyComplete();
 
-                        verify(footballDataService).getUpcomingMatches(expectedTeamName, country, testUser);
+                        verify(teamService).getUpcomingMatches(expectedTeamName, country, testUser);
                 }
 
                 @Test
@@ -468,7 +468,7 @@ class TeamControllerTest {
                         String country = "Germany";
                         String teamName = "bayern-munich";
 
-                        when(footballDataService.getUpcomingMatches(anyString(), anyString(), any(User.class)))
+                        when(teamService.getUpcomingMatches(anyString(), anyString(), any(User.class)))
                                         .thenReturn(Mono.empty());
 
                         // Act
@@ -505,7 +505,7 @@ class TeamControllerTest {
                                         "Real Madrid", "Atletico Madrid", previousMatches,
                                         "Victory for Real Madrid");
 
-                        when(footballDataService.predictNextMatch(expectedTeamName, country, testUser))
+                        when(teamService.getNextMatchPrediction(expectedTeamName, country, testUser))
                                         .thenReturn(Mono.just(expectedPrediction));
 
                         // Act
@@ -523,7 +523,7 @@ class TeamControllerTest {
                                         })
                                         .verifyComplete();
 
-                        verify(footballDataService).predictNextMatch(expectedTeamName, country, testUser);
+                        verify(teamService).getNextMatchPrediction(expectedTeamName, country, testUser);
                 }
 
                 @Test
@@ -533,7 +533,7 @@ class TeamControllerTest {
                         String country = "Italy";
                         String teamName = "inter";
 
-                        when(footballDataService.predictNextMatch(anyString(), anyString(), any(User.class)))
+                        when(teamService.getNextMatchPrediction(anyString(), anyString(), any(User.class)))
                                         .thenReturn(Mono.empty());
 
                         // Act
@@ -553,7 +553,7 @@ class TeamControllerTest {
                         // Arrange
                         String country = "Portugal";
                         String teamName = "porto";
-                        when(footballDataService.predictNextMatch(anyString(), anyString(), any(User.class)))
+                        when(teamService.getNextMatchPrediction(anyString(), anyString(), any(User.class)))
                                         .thenReturn(Mono.error(new RuntimeException("Prediction service failed")));
 
                         // Act & Assert
