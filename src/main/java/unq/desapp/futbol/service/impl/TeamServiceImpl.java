@@ -119,8 +119,14 @@ public class TeamServiceImpl implements TeamService {
     }
 
     private String compareAndDescribe(double valueA, double valueB, String metric, boolean higherIsBetter) {
-        String comparison = (valueA > valueB) ? (higherIsBetter ? "Higher" : "Lower")
-                : (valueA < valueB ? (higherIsBetter ? "Lower" : "Higher") : "Same");
+        String comparison;
+        if (valueA > valueB) {
+            comparison = higherIsBetter ? "Higher" : "Lower";
+        } else if (valueA < valueB) {
+            comparison = higherIsBetter ? "Lower" : "Higher";
+        } else {
+            comparison = "Same";
+        }
         return String.format("%s %s (%.1f vs %.1f)", comparison, metric, valueA, valueB);
     }
 

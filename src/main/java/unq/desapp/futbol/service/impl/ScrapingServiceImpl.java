@@ -305,9 +305,9 @@ public class ScrapingServiceImpl implements ScrapingService {
     private List<List<Object>> buildFixtureMatches(Matcher dataMatcher) throws IOException {
         String dataJson = dataMatcher.group(1)
                 .replace("'", "\"")
-                .replaceAll("([\\{,]\\s*)(\\w+)(\\s*:)", "$1\"$2\"$3")
-                .replaceAll(",\\s*,", ",\"\",")
-                .replaceAll(",\\s*]", "]");
+                .replace("([\\{,]\\s*)(\\w+)(\\s*:)", "$1\"$2\"$3")
+                .replace(",\\s*,", ",\"\",")
+                .replace(",\\s*]", "]");
 
         JsonNode matchesNode = objectMapper.readTree(dataJson)
                 .path("fixtureMatches");
@@ -437,10 +437,10 @@ public class ScrapingServiceImpl implements ScrapingService {
         String json = matcher.group(1)
                 .replaceFirst("(?s)showLeagueTableStandings.*?homeMatches", "homeMatches")
                 .replace("'", "\"")
-                .replaceAll("([\\{,]\\s*)(\\w+)(\\s*:)", "$1\"$2\"$3")
-                .replaceAll(",\\s*,", ",\"\",")
-                .replaceAll(",\\s*]", "]")
-                .replaceAll(",\\s*}", "}");
+                .replace("([\\{,]\\s*)(\\w+)(\\s*:)", "$1\"$2\"$3")
+                .replace(",\\s*,", ",\"\",")
+                .replace(",\\s*]", "]")
+                .replace(",\\s*}", "}");
 
         return objectMapper.readTree(json);
     }
@@ -611,7 +611,7 @@ public class ScrapingServiceImpl implements ScrapingService {
         for (List<Object> match : fixtureMatches) {
             if (match.size() > 10 && !"vs".equals(match.get(10).toString())) { // Partido jugado
                 String homeTeam = match.get(5).toString();
-                String result = match.get(10).toString().replaceAll("\\*", ""); // "1 : 0"
+                String result = match.get(10).toString().replace("\\*", ""); // "1 : 0"
                 String[] scores = result.split(" : ");
                 int homeScore = Integer.parseInt(scores[0]);
                 int awayScore = Integer.parseInt(scores[1]);
