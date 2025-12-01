@@ -6,6 +6,7 @@ import static org.assertj.core.api.Assertions.fail;
 import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
@@ -14,6 +15,7 @@ import unq.desapp.futbol.model.Role;
 import unq.desapp.futbol.model.User;
 
 @DataJpaTest
+@Tag("e2e")
 @DisplayName("UserRepository Integration Tests")
 class UserRepositoryTest {
 

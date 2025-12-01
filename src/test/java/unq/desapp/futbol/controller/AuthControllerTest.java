@@ -9,6 +9,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.api.Tag;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -26,6 +27,7 @@ import unq.desapp.futbol.security.JwtTokenProvider;
 import unq.desapp.futbol.service.UserService;
 
 @ExtendWith(MockitoExtension.class)
+@Tag("unit")
 class AuthControllerTest {
 
     @Mock

@@ -48,7 +48,13 @@ public class TeamServiceImpl implements TeamService {
 
     @Override
     public Mono<MatchPrediction> getNextMatchPrediction(String teamName, String country, User user) {
-        return scrapingService.predictNextMatch(teamName, country);
+        return scrapingService.predictNextMatch(teamName, country)
+                .doOnSuccess(prediction -> {
+                    if (prediction != null && user != null) {
+                        user.addSearchHistory(SearchType.TEAM, teamName + " (" + country + ")");
+                        userService.saveUser(user);
+                    }
+                });
     }
 
     @Override

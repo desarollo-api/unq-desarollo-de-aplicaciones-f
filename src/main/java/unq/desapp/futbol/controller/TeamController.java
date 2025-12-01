@@ -17,7 +17,6 @@ import unq.desapp.futbol.model.TeamComparisonResponse;
 import unq.desapp.futbol.model.UpcomingMatch;
 import unq.desapp.futbol.model.MatchPrediction;
 import unq.desapp.futbol.model.TeamStats;
-import unq.desapp.futbol.model.TeamComparison;
 import unq.desapp.futbol.model.Player;
 import unq.desapp.futbol.model.User;
 import unq.desapp.futbol.service.TeamService;
@@ -72,7 +71,7 @@ public class TeamController {
         }
 
         @GetMapping("/{country}/{name}/prediction")
-        @Operation(summary = "Predict Next Match Result", description = "Predicts the outcome of the team's next match using head-to-head history and current team statistics.")
+        @Operation(summary = "Predict Next Match Result", description = "Predicts the outcome of the team's next match using head-to-head history and current team statistics. This action is recorded in the user's search history.")
         @ApiResponses(value = {
                         @ApiResponse(responseCode = "200", description = "Successfully generated prediction", content = @Content(mediaType = "application/json", schema = @Schema(implementation = MatchPrediction.class))),
                         @ApiResponse(responseCode = "401", description = "Unauthorized - JWT token is missing or invalid", content = @Content),

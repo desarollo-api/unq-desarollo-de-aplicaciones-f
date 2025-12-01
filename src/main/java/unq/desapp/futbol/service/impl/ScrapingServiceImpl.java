@@ -611,7 +611,6 @@ public class ScrapingServiceImpl implements ScrapingService {
         for (List<Object> match : fixtureMatches) {
             if (match.size() > 10 && !"vs".equals(match.get(10).toString())) { // Partido jugado
                 String homeTeam = match.get(5).toString();
-                String awayTeam = match.get(8).toString();
                 String result = match.get(10).toString().replaceAll("\\*", ""); // "1 : 0"
                 String[] scores = result.split(" : ");
                 int homeScore = Integer.parseInt(scores[0]);

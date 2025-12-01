@@ -1,7 +1,9 @@
 package unq.desapp.futbol.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -10,10 +12,10 @@ import java.util.Collections;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Tag;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 import unq.desapp.futbol.model.MatchPrediction;
-import unq.desapp.futbol.model.TeamComparison;
 import unq.desapp.futbol.model.TeamStats;
 import unq.desapp.futbol.model.Player;
 import unq.desapp.futbol.model.PreviousMatch;
@@ -22,8 +24,8 @@ import unq.desapp.futbol.model.UpcomingMatch;
 import unq.desapp.futbol.model.User;
 import unq.desapp.futbol.service.impl.TeamServiceImpl;
 
+@Tag("unit")
 class TeamServiceImplTest {
-
         private User testUser;
         private UserService userService;
 
@@ -368,6 +370,10 @@ class TeamServiceImplTest {
                                 .verifyComplete();
 
                 verify(scrapingService, times(1)).predictNextMatch(teamName, country);
+                // Verify search history was added
+                assertThat(testUser.getSearchHistory()).hasSize(1);
+                assertThat(testUser.getSearchHistory().get(0).getQuery()).isEqualTo(teamName + " (" + country + ")");
+                verify(userService, times(1)).saveUser(testUser);
         }
 
         @Test
@@ -395,6 +401,8 @@ class TeamServiceImplTest {
                                 .verifyComplete();
 
                 verify(scrapingService, times(1)).predictNextMatch(teamName, country);
+                // Verify search history was NOT added because user is null
+                verify(userService, never()).saveUser(any());
         }
 
         @Test
@@ -414,6 +422,9 @@ class TeamServiceImplTest {
                                 .verifyComplete();
 
                 verify(scrapingService, times(1)).predictNextMatch(teamName, country);
+                // Verify search history was NOT added because prediction is empty
+                assertThat(testUser.getSearchHistory()).isEmpty();
+                verify(userService, never()).saveUser(any());
         }
 
         @Test
