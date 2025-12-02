@@ -1,5 +1,99 @@
 # .dockerignore
+# Comprehensive exclusions for Spring Boot Gradle project
+
+### Build outputs ###
 .gradle
-build
-.vscode
-bin
+build/
+out/
+bin/
+target/
+
+### Version Control ###
+.git
+.gitignore
+.gitattributes
+.github/
+
+### IDEs and Editors ###
+# VSCode
+.vscode/
+
+# IntelliJ IDEA
+.idea
+*.iws
+*.iml
+*.ipr
+
+# Eclipse/STS
+.apt_generated
+.classpath
+.factorypath
+.project
+.settings
+.springBeans
+.sts4-cache
+
+# NetBeans
+/nbproject/private/
+/nbbuild/
+/dist/
+/nbdist/
+/.nb-gradle/
+
+# Cursor & Windsurf
+.cursor/
+.windsurf/
+
+# Agent workflows
+.agent/
+
+### Documentation ###
+README.md
+TESTING_GUIDELINES.md
+docs/
+*.md
+
+### Development & Deployment Configs ###
+docker-compose.yml
+docker-compose.*.yml
+render.yaml
+.env
+.env.*
+
+### Monitoring data (should not be in build context) ###
+prometheus.yml
+grafana/
+data/
+
+### Database files ###
+*.db
+*.sqlite
+*.h2.db
+
+### Logs and temporary files ###
+*.log
+*.tmp
+*.temp
+logs/
+
+### OS specific files ###
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# Linux
+*~
+
+### Test coverage reports ###
+.jacoco/
+jacoco.exec
+coverage/
+
+### Gradle wrapper (keep only what's needed) ###
+!gradle/wrapper/gradle-wrapper.jar

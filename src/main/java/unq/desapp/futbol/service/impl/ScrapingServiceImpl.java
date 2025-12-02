@@ -1,4 +1,4 @@
-package unq.desapp.futbol.service;
+package unq.desapp.futbol.service.impl;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -15,6 +15,10 @@ import org.springframework.util.StringUtils;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
 import unq.desapp.futbol.model.UpcomingMatch;
+import unq.desapp.futbol.exceptions.TeamNotFoundException;
+import unq.desapp.futbol.exceptions.NoUpcomingMatchException;
+import unq.desapp.futbol.service.ScrapingService;
+import unq.desapp.futbol.model.TeamStats;
 import unq.desapp.futbol.model.MatchPrediction;
 import unq.desapp.futbol.model.Player;
 import unq.desapp.futbol.model.PlayerPerformance;
@@ -26,10 +30,10 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 @Service
@@ -38,6 +42,8 @@ public class ScrapingServiceImpl implements ScrapingService {
     private static final Logger logger = LoggerFactory.getLogger(ScrapingServiceImpl.class);
     private static final String USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/108.0.0.0 Safari/537.36";
     private static final String HEADER_ACCEPT = "Accept";
+    private static final String VICTORY_LITERAL = "Victory";
+    private static final String DEFEAT_LITERAL = "Defeat";
 
     private final ObjectMapper objectMapper = new ObjectMapper();
     private final String baseUrl;
@@ -49,10 +55,13 @@ public class ScrapingServiceImpl implements ScrapingService {
     // TEAM SQUAD
 
     @Override
-    public Mono<List<Player>> getTeamSquad(String teamName, String country) {
+    public Mono<List<Player>> findTeamSquad(String teamName, String country) {
         return Mono.fromCallable(() -> fetchTeamSquadFromAPI(teamName, country))
                 .subscribeOn(Schedulers.boundedElastic())
                 .onErrorResume(e -> {
+                    if (e instanceof TeamNotFoundException) {
+                        return Mono.error(e);
+                    }
                     logger.error("Error fetching team squad for team: {} ({})", teamName, country, e);
                     return Mono.empty();
                 });
@@ -135,7 +144,7 @@ public class ScrapingServiceImpl implements ScrapingService {
             }
         }
 
-        throw new IOException("Team not found for name: '" + teamName + "' (" + country + ")");
+        throw new TeamNotFoundException("Team not found for name: '" + teamName + "' in country: '" + country + "'");
     }
 
     private int extractTeamId(String teamUrl) {
@@ -150,7 +159,7 @@ public class ScrapingServiceImpl implements ScrapingService {
     // PLAYER PERFORMANCE
 
     @Override
-    public Mono<PlayerPerformance> getPlayerPerformance(String playerName) {
+    public Mono<PlayerPerformance> findPlayerPerformance(String playerName) {
         return Mono.fromCallable(() -> fetchPlayerPerformanceFromAPI(playerName))
                 .subscribeOn(Schedulers.boundedElastic())
                 .onErrorResume(e -> {
@@ -238,10 +247,13 @@ public class ScrapingServiceImpl implements ScrapingService {
 
     // UPCOMING MATCHES
 
-    public Mono<List<UpcomingMatch>> getUpcomingMatches(String teamName, String country) {
+    public Mono<List<UpcomingMatch>> findUpcomingMatches(String teamName, String country) {
         return Mono.fromCallable(() -> scrapeUpcomingMatches(teamName, country))
                 .subscribeOn(Schedulers.boundedElastic())
                 .onErrorResume(e -> {
+                    if (e instanceof TeamNotFoundException) {
+                        return Mono.error(e);
+                    }
                     logger.error("Error scraping upcoming matches for team: {} in country: {}", teamName, country, e);
                     return Mono.empty();
                 });
@@ -341,19 +353,21 @@ public class ScrapingServiceImpl implements ScrapingService {
         return Mono.fromCallable(() -> buildMatchPrediction(teamName, country))
                 .subscribeOn(Schedulers.boundedElastic())
                 .onErrorResume(e -> {
+                    if (e instanceof NoUpcomingMatchException || e instanceof TeamNotFoundException) {
+                        return Mono.error(e); // Re-throw our custom exception
+                    }
                     logger.error("Error generating match prediction for team: {} in country: {}", teamName, country, e);
-                    return Mono.empty();
+                    return Mono.empty(); // Return empty for other errors
                 });
     }
 
     private MatchPrediction buildMatchPrediction(String teamName, String country) throws IOException {
         List<List<Object>> fixtureMatches = buildFixtureMatches(teamName, country);
-        if (fixtureMatches.isEmpty())
-            return null;
 
         List<List<Object>> upcomingMatches = buildUpcomingMatches(fixtureMatches);
-        if (upcomingMatches.isEmpty())
-            return null;
+        if (upcomingMatches.isEmpty()) {
+            throw new NoUpcomingMatchException("This team has no upcoming matches.");
+        }
 
         List<Object> upcomingMatch = upcomingMatches.get(0);
         String matchId = upcomingMatch.get(0).toString();
@@ -402,7 +416,7 @@ public class ScrapingServiceImpl implements ScrapingService {
                 .flatMap(Collection::stream)
                 .distinct()
                 .limit(5)
-                .collect(Collectors.toList());
+                .toList();
 
         return new MatchPrediction(homeTeam, awayTeam, combinedMeetings, finalPrediction);
     }
@@ -441,32 +455,20 @@ public class ScrapingServiceImpl implements ScrapingService {
         return objectMapper.readTree(json);
     }
 
-    private JsonNode getNodeArray(JsonNode root, String field) {
-        JsonNode node = root.path(field);
-        return node.isArray() ? node : objectMapper.createArrayNode();
-    }
-
-    private List<List<Object>> getNestedNodeArray(JsonNode root, String field) {
-        JsonNode node = root.path(field);
-        if (!node.isArray())
-            return Collections.emptyList();
-
-        List<List<List<Object>>> nested = objectMapper.convertValue(
-                node, new TypeReference<List<List<List<Object>>>>() {
-                });
-        return nested.isEmpty() ? Collections.emptyList() : nested.get(0);
-    }
-
     private int evaluatePrediction(List<PreviousMatch> matches, String team, boolean forTeam) {
         String prediction = getPrediction(matches, team);
-        return prediction.contains(forTeam ? "Victory" : "Defeat") ? 1 : 0;
+        return prediction.contains(getOutcomeLiteral(forTeam)) ? 1 : 0;
+    }
+
+    private CharSequence getOutcomeLiteral(boolean isVictory) {
+        return isVictory ? VICTORY_LITERAL : DEFEAT_LITERAL;
     }
 
     private int evaluateTeamPrediction(List<PreviousMatch> matches, String team, boolean isTeam, boolean forTeam) {
         String prediction = getPrediction(matches, team);
         boolean condition = isTeam
-                ? prediction.contains(forTeam ? "Victory" : "Defeat")
-                : prediction.contains(forTeam ? "Defeat" : "Victory");
+                ? prediction.contains(getOutcomeLiteral(forTeam))
+                : prediction.contains(getOutcomeLiteral(!forTeam));
         return condition ? 1 : 0;
     }
 
@@ -474,15 +476,21 @@ public class ScrapingServiceImpl implements ScrapingService {
         if (currentPoints == opponentPoints)
             return "Draw";
         return currentPoints > opponentPoints
-                ? String.format("Victory for %s", team)
-                : String.format("Defeat for %s", team);
+                ? String.format(VICTORY_LITERAL + " for %s", team)
+                : String.format(DEFEAT_LITERAL + " for %s", team);
     }
 
     private String getPrediction(List<PreviousMatch> matches, String teamName) {
         if (matches == null || matches.isEmpty())
             return "Cannot predict match outcome";
 
-        int teamWins = 0, opponentWins = 0;
+        int[] scores = calculateTeamScores(matches, teamName);
+        return formatPredictionResult(scores[0], scores[1], teamName);
+    }
+
+    private int[] calculateTeamScores(List<PreviousMatch> matches, String teamName) {
+        int teamWins = 0;
+        int opponentWins = 0;
 
         for (PreviousMatch match : matches) {
             try {
@@ -501,13 +509,18 @@ public class ScrapingServiceImpl implements ScrapingService {
                         opponentWins++;
                 }
             } catch (NumberFormatException ignored) {
+                // Ignore invalid score formats; continue with next match
             }
         }
 
+        return new int[] { teamWins, opponentWins };
+    }
+
+    private String formatPredictionResult(int teamWins, int opponentWins, String teamName) {
         if (teamWins > opponentWins)
-            return "Victory for " + teamName;
+            return VICTORY_LITERAL + " for " + teamName;
         if (opponentWins > teamWins)
-            return "Defeat for " + teamName;
+            return DEFEAT_LITERAL + " for " + teamName;
         return "Draw";
     }
 
@@ -520,7 +533,7 @@ public class ScrapingServiceImpl implements ScrapingService {
                         m.get(33).toString(),
                         m.get(8).toString(),
                         m.get(34).toString()))
-                .collect(Collectors.toList());
+                .toList();
     }
 
     private List<PreviousMatch> buildPreviousMatchesV2(List<List<Object>> previousMeetings) {
@@ -532,7 +545,7 @@ public class ScrapingServiceImpl implements ScrapingService {
                         m.get(31).toString(),
                         m.get(8).toString(),
                         m.get(32).toString()))
-                .collect(Collectors.toList());
+                .toList();
     }
 
     private List<List<Object>> buildUpcomingMatches(List<List<Object>> fixtureMatches) {
@@ -545,5 +558,93 @@ public class ScrapingServiceImpl implements ScrapingService {
         }
 
         return upcomingMatches;
+    }
+
+    // TEAM STATS
+
+    @Override
+    public Mono<TeamStats> findTeamStats(String teamName, String country) {
+        return Mono.fromCallable(() -> fetchTeamStats(teamName, country))
+                .subscribeOn(Schedulers.boundedElastic())
+                .onErrorResume(e -> {
+                    if (e instanceof TeamNotFoundException) {
+                        return Mono.error(e);
+                    }
+                    logger.error("Error fetching team stats for team: {} ({})", teamName, country, e);
+                    return Mono.empty();
+                });
+    }
+
+    private TeamStats fetchTeamStats(String teamName, String country) throws IOException {
+        // 1. Reutilizar la búsqueda del equipo para obtener su URL y su ID
+        TeamStats stats = new TeamStats(teamName, country);
+
+        // 2. Obtener plantilla de jugadores y calcular estadísticas basadas en ellos
+        List<Player> squad = findTeamSquad(teamName, country).block();
+        if (squad != null && !squad.isEmpty()) {
+            calculatePlayerBasedStats(stats, squad);
+        }
+
+        // 3. Obtener historial de partidos y calcular resultados
+        List<List<Object>> fixtureMatches = buildFixtureMatches(teamName, country);
+        if (!fixtureMatches.isEmpty()) {
+            calculateMatchResults(stats, fixtureMatches, teamName);
+        }
+
+        logger.info("Successfully generated stats for team '{}'", teamName);
+        return stats;
+    }
+
+    private void calculatePlayerBasedStats(TeamStats stats, List<Player> players) {
+        if (players == null || players.isEmpty()) {
+            return;
+        }
+
+        double averageAge = players.stream()
+                .map(Player::getAge).filter(java.util.Objects::nonNull)
+                .mapToInt(a -> a).average().orElse(0.0);
+        stats.setAverageAge(Math.round(averageAge * 10.0) / 10.0);
+
+        double averageRating = players.stream()
+                .map(Player::getRating).filter(java.util.Objects::nonNull)
+                .mapToDouble(r -> r).average().orElse(0.0);
+        stats.setAverageRating(Math.round(averageRating * 10.0) / 10.0);
+
+        players.stream()
+                .filter(p -> p.getRating() != null)
+                .max(Comparator.comparing(Player::getRating))
+                .ifPresent(p -> stats.setBestPlayer(p.getName()));
+    }
+
+    private void calculateMatchResults(TeamStats stats, List<List<Object>> fixtureMatches, String teamName) {
+        int wins = 0;
+        int draws = 0;
+        int defeats = 0;
+
+        for (List<Object> match : fixtureMatches) {
+            if (match.size() > 10 && !"vs".equals(match.get(10).toString())) { // Partido jugado
+                String homeTeam = match.get(5).toString(); // "1 : 0"
+                String result = match.get(10).toString().replace("*", "");
+                String[] scores = result.split(" : ");
+                int homeScore = Integer.parseInt(scores[0]);
+                int awayScore = Integer.parseInt(scores[1]);
+
+                boolean isHome = teamName.equalsIgnoreCase(homeTeam);
+                if (homeScore == awayScore)
+                    draws++;
+                else if ((isHome && homeScore > awayScore) || (!isHome && awayScore > homeScore))
+                    wins++;
+                else
+                    defeats++;
+            }
+        }
+        stats.setWins(wins);
+        stats.setDraws(draws);
+        stats.setDefeats(defeats);
+
+        int totalMatches = wins + draws + defeats;
+        if (totalMatches > 0) {
+            stats.setWinRate(Math.round(((double) wins / totalMatches) * 1000.0) / 10.0);
+        }
     }
 }

@@ -1,0 +1,84 @@
+server:
+  http_listen_port: 9080
+  grpc_listen_port: 0
+
+positions:
+  filename: /tmp/positions.yaml
+
+clients:
+  - url: http://loki:3100/loki/api/v1/push
+
+scrape_configs:
+  # Scrape Docker container logs
+  - job_name: docker
+    docker_sd_configs:
+      - host: unix:///var/run/docker.sock
+        refresh_interval: 5s
+        filters:
+          - name: label
+            values: ["com.docker.compose.project=futbol"]
+
+    relabel_configs:
+      # Extract container name
+      - source_labels: ['__meta_docker_container_name']
+        regex: '/(.*)'
+        target_label: 'container_name'
+
+      # Extract container ID
+      - source_labels: ['__meta_docker_container_id']
+        target_label: 'container_id'
+
+      # Extract compose service name
+      - source_labels: ['__meta_docker_container_label_com_docker_compose_service']
+        target_label: 'compose_service'
+
+      # Extract compose project
+      - source_labels: ['__meta_docker_container_label_com_docker_compose_project']
+        target_label: 'compose_project'
+
+      # Add job label
+      - replacement: 'docker'
+        target_label: 'job'
+
+      # Add stream label (stdout/stderr)
+      - source_labels: ['__meta_docker_container_log_stream']
+        target_label: 'stream'
+
+    pipeline_stages:
+      # Stage 1: Parse JSON logs from Spring Boot application
+      - json:
+          expressions:
+            timestamp: timestamp
+            level: level
+            logger: logger
+            thread: thread
+            message: message
+            application: application
+            environment: environment
+            trace_id: traceId
+            span_id: spanId
+            stack_trace: stack_trace
+
+      # Stage 2: Extract timestamp from JSON
+      - timestamp:
+          source: timestamp
+          format: RFC3339Nano
+          fallback_formats:
+            - "2006-01-02T15:04:05.000Z0700"
+            - "2006-01-02T15:04:05.000Z07:00"
+
+      # Stage 3: Add labels from parsed JSON
+      - labels:
+          level:
+          logger:
+          application:
+          environment:
+
+      # Stage 4: Output the message field as the log line
+      - output:
+          source: message
+
+      # Stage 5: Drop empty or health check logs (optional)
+      - match:
+          selector: '{container_name="futbol-api"} |~ "actuator/health"'
+          action: drop

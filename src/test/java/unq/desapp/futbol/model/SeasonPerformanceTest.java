@@ -3,7 +3,9 @@ package unq.desapp.futbol.model;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Tag;
 
+@Tag("unit")
 class SeasonPerformanceTest {
 
     @Test

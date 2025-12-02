@@ -14,9 +14,14 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import reactor.test.StepVerifier;
+import unq.desapp.futbol.exceptions.NoUpcomingMatchException;
+import unq.desapp.futbol.exceptions.TeamNotFoundException;
+import unq.desapp.futbol.service.impl.ScrapingServiceImpl;
 
+@Tag("e2e")
 class ScrapingServiceImplTest {
 
         private WireMockServer wireMockServer;
@@ -67,7 +72,7 @@ class ScrapingServiceImplTest {
                                                 .withBody(loadTestResource("team-squad-response.json"))));
 
                 // Act & Assert
-                StepVerifier.create(scrapingService.getTeamSquad(teamName, country))
+                StepVerifier.create(scrapingService.findTeamSquad(teamName, country))
                                 .expectNextMatches(players -> {
                                         assertThat(players).isNotEmpty();
                                         assertThat(players.get(0).getName()).isNotBlank();
@@ -77,7 +82,7 @@ class ScrapingServiceImplTest {
         }
 
         @Test
-        void shouldReturnEmptyMonoWhenTeamNotFound() {
+        void shouldThrowTeamNotFoundExceptionWhenTeamNotFound() {
                 // Arrange
                 String teamName = "NonExistent Team";
                 String country = "Unknown";
@@ -90,8 +95,10 @@ class ScrapingServiceImplTest {
                                                 .withBody("<html><body><div class=\"search-result\"></div></body></html>")));
 
                 // Act & Assert
-                StepVerifier.create(scrapingService.getTeamSquad(teamName, country))
-                                .verifyComplete(); // Empty Mono
+                StepVerifier.create(scrapingService.findTeamSquad(teamName, country))
+                                .expectErrorMatches(throwable -> throwable instanceof TeamNotFoundException
+                                                && throwable.getMessage().contains("Team not found for name"))
+                                .verify();
         }
 
         @Test
@@ -107,7 +114,7 @@ class ScrapingServiceImplTest {
                                                 .withBody("Internal Server Error")));
 
                 // Act & Assert
-                StepVerifier.create(scrapingService.getTeamSquad(teamName, country))
+                StepVerifier.create(scrapingService.findTeamSquad(teamName, country))
                                 .verifyComplete(); // Empty Mono due to error handling
         }
 
@@ -132,7 +139,7 @@ class ScrapingServiceImplTest {
                                                 .withBody("{\"playerTableStats\": []}")));
 
                 // Act & Assert
-                StepVerifier.create(scrapingService.getTeamSquad(teamName, country))
+                StepVerifier.create(scrapingService.findTeamSquad(teamName, country))
                                 .expectNextMatches(players -> {
                                         assertThat(players).isEmpty();
                                         return true;
@@ -162,7 +169,7 @@ class ScrapingServiceImplTest {
                                                 .withBody(loadTestResource("player-performance-response.json"))));
 
                 // Act & Assert
-                StepVerifier.create(scrapingService.getPlayerPerformance(playerName))
+                StepVerifier.create(scrapingService.findPlayerPerformance(playerName))
                                 .expectNextMatches(performance -> {
                                         assertThat(performance).isNotNull();
                                         assertThat(performance.getName()).isEqualTo(playerName);
@@ -185,7 +192,7 @@ class ScrapingServiceImplTest {
                                                 .withBody("<html><body><div class=\"search-result\"></div></body></html>")));
 
                 // Act & Assert
-                StepVerifier.create(scrapingService.getPlayerPerformance(playerName))
+                StepVerifier.create(scrapingService.findPlayerPerformance(playerName))
                                 .verifyComplete(); // Empty Mono
         }
 
@@ -209,7 +216,7 @@ class ScrapingServiceImplTest {
                                                 .withBody("{\"playerTableStats\": []}")));
 
                 // Act & Assert
-                StepVerifier.create(scrapingService.getPlayerPerformance(playerName))
+                StepVerifier.create(scrapingService.findPlayerPerformance(playerName))
                                 .expectNextMatches(performance -> {
                                         assertThat(performance).isNotNull();
                                         assertThat(performance.getSeasons()).isEmpty();
@@ -230,7 +237,7 @@ class ScrapingServiceImplTest {
                                                 .withBody("Internal Server Error")));
 
                 // Act & Assert
-                StepVerifier.create(scrapingService.getPlayerPerformance(playerName))
+                StepVerifier.create(scrapingService.findPlayerPerformance(playerName))
                                 .verifyComplete(); // Empty Mono due to error handling
         }
 
@@ -257,7 +264,7 @@ class ScrapingServiceImplTest {
                                                 .withBody(loadTestResource("fixtures-response.html"))));
 
                 // Act & Assert
-                StepVerifier.create(scrapingService.getUpcomingMatches(teamName, country))
+                StepVerifier.create(scrapingService.findUpcomingMatches(teamName, country))
                                 .expectNextMatches(matches -> {
                                         assertThat(matches).isNotEmpty();
                                         return true;
@@ -286,7 +293,7 @@ class ScrapingServiceImplTest {
                                                 .withBody(loadTestResource("fixtures-empty-response.html"))));
 
                 // Act & Assert
-                StepVerifier.create(scrapingService.getUpcomingMatches(teamName, country))
+                StepVerifier.create(scrapingService.findUpcomingMatches(teamName, country))
                                 .expectNextMatches(matches -> {
                                         assertThat(matches).isEmpty();
                                         return true;
@@ -307,7 +314,7 @@ class ScrapingServiceImplTest {
                                                 .withBody("Internal Server Error")));
 
                 // Act & Assert
-                StepVerifier.create(scrapingService.getUpcomingMatches(teamName, country))
+                StepVerifier.create(scrapingService.findUpcomingMatches(teamName, country))
                                 .verifyComplete(); // Empty Mono
         }
 
@@ -352,7 +359,7 @@ class ScrapingServiceImplTest {
         }
 
         @Test
-        void shouldReturnEmptyMonoWhenNoUpcomingMatchesForPrediction() {
+        void shouldThrowNoUpcomingMatchExceptionWhenNoUpcomingMatchesForPrediction() {
                 // Arrange
                 String teamName = "Test Team";
                 String country = "Argentina";
@@ -373,7 +380,9 @@ class ScrapingServiceImplTest {
 
                 // Act & Assert
                 StepVerifier.create(scrapingService.predictNextMatch(teamName, country))
-                                .verifyComplete(); // Empty Mono (null)
+                                .expectErrorMatches(throwable -> throwable instanceof NoUpcomingMatchException
+                                                && throwable.getMessage().equals("This team has no upcoming matches."))
+                                .verify();
         }
 
         @Test

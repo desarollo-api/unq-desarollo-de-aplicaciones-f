@@ -1,49 +1,18 @@
 package unq.desapp.futbol.service;
 
-import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.stereotype.Service;
-import unq.desapp.futbol.model.User;
-import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
-import java.util.concurrent.CopyOnWriteArrayList;
+import unq.desapp.futbol.model.User;
 
-@Service
-public class UserService {
+public interface UserService {
 
-    private final List<User> users = new CopyOnWriteArrayList<>();
-    private final PasswordEncoder passwordEncoder;
+    List<User> getAllUsers();
 
-    public UserService(PasswordEncoder passwordEncoder) {
-        this.passwordEncoder = passwordEncoder;
-    }
+    Optional<User> findByEmail(String email);
 
-    public List<User> getAllUsers() {
-        return Collections.unmodifiableList(users);
-    }
+    Optional<User> loginUser(String email, String password);
 
-    public Optional<User> findByEmail(String email) {
-        return users.stream()
-                .filter(user -> user.getEmail().equalsIgnoreCase(email))
-                .findFirst();
-    }
+    User addUser(User user);
 
-    public Optional<User> loginUser(String email, String password) {
-        return findByEmail(email)
-                .filter(user -> passwordEncoder.matches(password, user.getPassword()));
-    }
-
-    public User addUser(User user) {
-        if (findByEmail(user.getEmail()).isPresent()) {
-            throw new IllegalArgumentException("Email is already taken: " + user.getEmail());
-        }
-        User newUser = new User(
-                user.getEmail(),
-                passwordEncoder.encode(user.getPassword()),
-                user.getFirstName(),
-                user.getLastName(),
-                user.getRole());
-        users.add(newUser);
-        return newUser;
-    }
+    User saveUser(User user);
 }

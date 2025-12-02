@@ -8,8 +8,10 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.util.Collection;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Tag;
 import org.springframework.security.core.GrantedAuthority;
 
+@Tag("unit")
 class UserTest {
 
     @Nested
@@ -95,7 +97,7 @@ class UserTest {
             assertEquals(u1.hashCode(), u2.hashCode());
             assertNotEquals(u1, u3);
             assertNotEquals(u1.hashCode(), u3.hashCode());
-            assertNotEquals(u1, null);
+            assertNotEquals(null, u1);
             assertNotEquals(u1, new Object());
         }
 

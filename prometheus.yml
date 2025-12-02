@@ -1,0 +1,15 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+scrape_configs:
+  - job_name: 'futbol-project-api'
+    metrics_path: '/actuator/prometheus'
+    static_configs:
+      # Use Docker service name for internal networking
+      - targets: ['futbol-api:8080']
+    # Optional: Add labels for better organization
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: instance
+        replacement: 'futbol-api'

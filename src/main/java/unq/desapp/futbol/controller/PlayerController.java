@@ -1,4 +1,4 @@
-package unq.desapp.futbol.webservice;
+package unq.desapp.futbol.controller;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -17,7 +17,8 @@ import org.springframework.web.bind.annotation.RestController;
 import reactor.core.publisher.Mono;
 import unq.desapp.futbol.model.PlayerPerformance;
 import unq.desapp.futbol.model.User;
-import unq.desapp.futbol.service.FootballDataService;
+import unq.desapp.futbol.service.PlayerService;
+import unq.desapp.futbol.config.metrics.BusinessMetric;
 
 @RestController
 @Tag(name = "Players")
@@ -25,13 +26,14 @@ import unq.desapp.futbol.service.FootballDataService;
 @SecurityRequirement(name = "BearerAuth")
 public class PlayerController {
 
-        private final FootballDataService footballDataService;
+        private final PlayerService playerService;
 
-        public PlayerController(FootballDataService footballDataService) {
-                this.footballDataService = footballDataService;
+        public PlayerController(PlayerService playerService) {
+                this.playerService = playerService;
         }
 
         @GetMapping("/{name}")
+        @BusinessMetric(name = "player_performance_search", help = "Counts player performance searches")
         @Operation(summary = "Get Player Performance", description = "Returns performance for a specific player. This action is recorded in the user's search history.")
         @ApiResponses(value = {
                         @ApiResponse(responseCode = "200", description = "Successfully retrieved player data", content = @Content(mediaType = "application/json", schema = @Schema(implementation = PlayerPerformance.class))),
@@ -43,7 +45,7 @@ public class PlayerController {
                         @AuthenticationPrincipal User user) {
 
                 String playerName = name.replace('-', ' ');
-                return footballDataService.getPlayerPerformance(playerName, user)
+                return playerService.getPlayerPerformance(playerName, user)
                                 .map(ResponseEntity::ok)
                                 .defaultIfEmpty(ResponseEntity.notFound().build());
         }

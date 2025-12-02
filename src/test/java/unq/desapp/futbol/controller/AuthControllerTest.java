@@ -1,4 +1,4 @@
-package unq.desapp.futbol.webservice;
+package unq.desapp.futbol.controller;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
@@ -9,6 +9,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.api.Tag;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -26,6 +27,7 @@ import unq.desapp.futbol.security.JwtTokenProvider;
 import unq.desapp.futbol.service.UserService;
 
 @ExtendWith(MockitoExtension.class)
+@Tag("unit")
 class AuthControllerTest {
 
     @Mock
@@ -90,7 +92,8 @@ class AuthControllerTest {
     @DisplayName("Register with valid data creates user with USER role")
     void register_success_returnsCreatedUser() {
         // Arrange
-        RegisterRequest request = new RegisterRequest(testUser.getEmail(), testUser.getPassword(), testUser.getFirstName(), testUser.getLastName());
+        RegisterRequest request = new RegisterRequest(testUser.getEmail(), testUser.getPassword(),
+                testUser.getFirstName(), testUser.getLastName());
         String expectedToken = "new.user.token";
         long expectedExpiresIn = 3600L;
 
@@ -117,8 +120,10 @@ class AuthControllerTest {
     @Test
     void register_failure_whenEmailExists() {
         // Arrange
-        RegisterRequest request = new RegisterRequest(testUser.getEmail(), testUser.getPassword(), testUser.getFirstName(), testUser.getLastName());
-        when(footballService.addUser(any(User.class))).thenThrow(new IllegalArgumentException("Email is already taken"));
+        RegisterRequest request = new RegisterRequest(testUser.getEmail(), testUser.getPassword(),
+                testUser.getFirstName(), testUser.getLastName());
+        when(footballService.addUser(any(User.class)))
+                .thenThrow(new IllegalArgumentException("Email is already taken"));
 
         // Act & Assert
         StepVerifier.create(controller.register(request))

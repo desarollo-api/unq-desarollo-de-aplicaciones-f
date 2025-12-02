@@ -14,6 +14,8 @@ A Spring Boot backend that exposes a football (soccer) API with JWT-based authen
 - Spring Boot 3.5.5
   - Spring WebFlux (Reactive)
   - Spring Security Reactive (JWT)
+  - Spring Data JPA
+- H2 Database (embedded)
 - JSON Web Token (jjwt 0.12.3)
 - Lombok
 - Jsoup (HTML parsing/scraping)
@@ -31,9 +33,7 @@ A Spring Boot backend that exposes a football (soccer) API with JWT-based authen
   - Reactive, stateless JWT-based authentication using Spring Security WebFlux
   - All requests require authentication except those under `/auth/**`
   - CORS enabled for all origins and standard HTTP methods
-  - Two in-memory demo users are provided by `CustomReactiveUserDetailsService`:
-    - `user@example.com` / `password`
-    - `admin@example.com` / `adminpass`
+  - Users are persisted in H2 database (see Database section)
   - Authentication components:
     - `ReactiveJwtAuthenticationManager`: Validates JWT tokens reactively
     - `ReactiveUserPasswordAuthenticationManager`: Authenticates username/password for login
@@ -45,6 +45,15 @@ A Spring Boot backend that exposes a football (soccer) API with JWT-based authen
   - JWT settings are externalizable via env vars with defaults:
     - `JWT_SECRET_KEY` (base64-encoded HMAC key)
     - `JWT_EXPIRATION` (milliseconds; default 604800000 = 7 days)
+- Database:
+  - **H2 Database** (embedded, file-based) for user persistence
+  - Database file location: `./data/futbol-db`
+  - H2 Console enabled at `/h2-console` for development
+    - JDBC URL: `jdbc:h2:file:./data/futbol-db`
+    - Username: `sa`
+    - Password: (empty)
+  - JPA/Hibernate configured with `ddl-auto=update` (auto-creates/updates schema)
+  - Users persist between application restarts
 
 ### REST API
 
@@ -99,17 +108,28 @@ A Spring Boot backend that exposes a football (soccer) API with JWT-based authen
 
 ## Build, Test, Coverage, CI
 
-- Build with Gradle Wrapper:
-  - `./gradlew build`
-- Run tests:
-  - `./gradlew test`
-- Coverage with JaCoCo:
-  - Report: `./gradlew jacocoTestReport`
-  - Verification (min 55%): `./gradlew jacocoTestCoverageVerification`
+- **Build** with Gradle Wrapper:
+  - `./gradlew build -x test` (skips tests to avoid redundancy in CI)
+
+- **Test Execution Strategy**:
+  The project uses **JUnit 5 Tags** to classify tests into two profiles:
+
+  1. **Unit Tests** (`@Tag("unit")`): Fast, isolated tests using mocks. Run on every PR.
+     - Command: `./gradlew unitTest`
+  2. **E2E Tests** (`@Tag("e2e")`): Slower integration tests (Database, WireMock). Run only on PRs to `main`.
+     - Command: `./gradlew e2eTest`
+  3. **All Tests**:
+     - Command: `./gradlew test` (or simply `./gradlew unitTest e2eTest`)
+
+- **Coverage with JaCoCo**:
+  - Report: `./gradlew jacocoTestReport` (collects data from any executed test task)
+  - Verification (min 80%): `./gradlew jacocoTestCoverageVerification`
   - HTML report output: `build/reports/jacoco/test/html/`
-- GitHub Actions (`.github/workflows/ci.yml`):
-  - Triggers on pull requests to `main` and `develop`.
-  - Jobs: tests, coverage, and build on Ubuntu with Temurin JDK 17 and Gradle cache.
+
+- **CI/CD (GitHub Actions)**:
+  - **Unit Tests Job**: Runs on **ALL** Pull Requests.
+  - **E2E Tests Job**: Runs **ONLY** on Pull Requests targeting `main`.
+  - **Coverage Job**: Consolidates results from executed jobs and verifies >80% coverage.
 
 ## Run Locally
 
