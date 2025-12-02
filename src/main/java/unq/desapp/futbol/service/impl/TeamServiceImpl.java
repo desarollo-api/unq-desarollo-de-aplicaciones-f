@@ -119,6 +119,7 @@ public class TeamServiceImpl implements TeamService {
     }
 
     private String compareAndDescribe(double valueA, double valueB, String metric, boolean higherIsBetter) {
+        java.util.Locale usLocale = java.util.Locale.US;
         String comparison;
         if (valueA > valueB) {
             comparison = higherIsBetter ? "Higher" : "Lower";
@@ -127,7 +128,7 @@ public class TeamServiceImpl implements TeamService {
         } else {
             comparison = "Same";
         }
-        return String.format("%s %s (%.1f vs %.1f)", comparison, metric, valueA, valueB);
+        return String.format(usLocale, "%s %s (%.1f vs %.1f)", comparison, metric, valueA, valueB);
     }
 
     private String generateVerdict(TeamStats statsA, TeamStats statsB) {
