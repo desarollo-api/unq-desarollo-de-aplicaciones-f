@@ -1,26 +1,29 @@
 package unq.desapp.futbol.config.logging;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import java.util.concurrent.atomic.AtomicReference;
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.Signature;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.MDC;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
+import reactor.test.StepVerifier;
 
 @Tag("unit")
+@SuppressWarnings("unchecked")
 class LoggingAspectTest {
 
     private LoggingAspect loggingAspect;
@@ -30,27 +33,41 @@ class LoggingAspectTest {
 
     @BeforeEach
     void setUp() {
-        // Create an instance of LoggingAspect with an injected mock logger
-        loggingAspect = getTestLoggingAspect();
+        mockLogger = mock(Logger.class);
+        loggingAspect = new LoggingAspect() {
+            @Override
+            protected Logger getLogger(Class<?> clazz) {
+                return mockLogger;
+            }
+        };
 
         joinPoint = mock(ProceedingJoinPoint.class);
         signature = mock(Signature.class);
 
-        MDC.clear();
-    }
-
-    @AfterEach
-    void tearDown() {
-        MDC.clear();
-    }
-
-    @Test
-    void shouldInterceptServiceLayerMethods() throws Throwable {
-        // Arrange
+        // Setup common mock behavior
         TestService testService = new TestService();
         when(joinPoint.getTarget()).thenReturn(testService);
         when(joinPoint.getSignature()).thenReturn(signature);
         when(signature.getName()).thenReturn("testMethod");
+
+        // Verify MDC context when logger.info is called
+        doAnswer(invocation -> {
+            assertEquals("TestService", MDC.get("class_name"), "MDC class_name should be set");
+            assertEquals("testMethod", MDC.get("method_name"), "MDC method_name should be set");
+            return null;
+        }).when(mockLogger).info(anyString(), anyLong());
+
+        // Verify MDC context when logger.error is called
+        doAnswer(invocation -> {
+            assertEquals("TestService", MDC.get("class_name"), "MDC class_name should be set");
+            assertEquals("testMethod", MDC.get("method_name"), "MDC method_name should be set");
+            return null;
+        }).when(mockLogger).error(anyString(), anyString(), any(Throwable.class));
+    }
+
+    @Test
+    void shouldLogSynchronousSuccess() throws Throwable {
+        // Arrange
         when(joinPoint.proceed()).thenReturn("result");
 
         // Act
@@ -58,173 +75,87 @@ class LoggingAspectTest {
 
         // Assert
         assertEquals("result", result);
-        verify(joinPoint, times(1)).proceed();
+        verify(mockLogger).info(eq("Method executed successfully in {} ms"), anyLong());
     }
 
     @Test
-    void shouldEnrichMDCWithClassAndMethodName() throws Throwable {
+    void shouldLogSynchronousError() throws Throwable {
         // Arrange
-        TestService testService = new TestService();
-        when(joinPoint.getTarget()).thenReturn(testService);
-        when(joinPoint.getSignature()).thenReturn(signature);
-        when(signature.getName()).thenReturn("testMethod");
-
-        AtomicReference<String> capturedClassName = new AtomicReference<>();
-        AtomicReference<String> capturedMethodName = new AtomicReference<>();
-        AtomicReference<String> capturedCorrelationId = new AtomicReference<>();
-
-        when(joinPoint.proceed()).thenAnswer(invocation -> {
-            // Capture MDC values during execution
-            capturedClassName.set(MDC.get("class_name"));
-            capturedMethodName.set(MDC.get("method_name"));
-            capturedCorrelationId.set(MDC.get("correlation_id"));
-            return "result";
-        });
-
-        // Act
-        loggingAspect.logMethodExecution(joinPoint);
-
-        // Assert - Verify MDC was populated during execution
-        assertEquals("TestService", capturedClassName.get());
-        assertEquals("testMethod", capturedMethodName.get());
-        assertNotNull(capturedCorrelationId.get());
-
-        // Assert - MDC should be cleared after execution
-        assertNull(MDC.get("class_name"));
-        assertNull(MDC.get("method_name"));
-        assertNull(MDC.get("correlation_id"));
-    }
-
-    @Test
-    void shouldLogErrorAndRethrowException() throws Throwable {
-        // Arrange
-        TestService testService = new TestService();
-        RuntimeException expectedException = new RuntimeException("Test exception");
-        when(joinPoint.getTarget()).thenReturn(testService);
-        when(joinPoint.getSignature()).thenReturn(signature);
-        when(signature.getName()).thenReturn("testMethod");
-        when(joinPoint.proceed()).thenThrow(expectedException);
+        RuntimeException exception = new RuntimeException("Error");
+        when(joinPoint.proceed()).thenThrow(exception);
 
         // Act & Assert
-        RuntimeException thrownException = assertThrows(RuntimeException.class, () -> {
-            loggingAspect.logMethodExecution(joinPoint);
-        });
+        assertThrows(RuntimeException.class, () -> loggingAspect.logMethodExecution(joinPoint));
 
-        assertEquals(expectedException, thrownException);
+        verify(mockLogger).error(eq("Error executing method: {}"), anyString(), eq(exception));
     }
 
     @Test
-    void shouldClearMDCInFinallyBlock() throws Throwable {
+    void shouldLogMonoSuccess() throws Throwable {
         // Arrange
-        TestService testService = new TestService();
-        when(joinPoint.getTarget()).thenReturn(testService);
-        when(joinPoint.getSignature()).thenReturn(signature);
-        when(signature.getName()).thenReturn("testMethod");
-        when(joinPoint.proceed()).thenReturn("result");
-
-        // Pre-populate MDC
-        MDC.put("pre_existing_key", "pre_existing_value");
+        when(joinPoint.proceed()).thenReturn(Mono.just("result"));
 
         // Act
-        loggingAspect.logMethodExecution(joinPoint);
-
-        // Assert - All MDC should be cleared
-        assertNull(MDC.get("class_name"));
-        assertNull(MDC.get("method_name"));
-        assertNull(MDC.get("correlation_id"));
-        assertNull(MDC.get("execution_time_ms"));
-        assertNull(MDC.get("pre_existing_key"));
-    }
-
-    @Test
-    void shouldClearMDCEvenWhenExceptionIsThrown() throws Throwable {
-        // Arrange
-        TestService testService = new TestService();
-        when(joinPoint.getTarget()).thenReturn(testService);
-        when(joinPoint.getSignature()).thenReturn(signature);
-        when(signature.getName()).thenReturn("testMethod");
-        when(joinPoint.proceed()).thenThrow(new RuntimeException("Test exception"));
-
-        // Pre-populate MDC
-        MDC.put("pre_existing_key", "pre_existing_value");
-
-        // Act
-        assertThrows(RuntimeException.class, () -> {
-            loggingAspect.logMethodExecution(joinPoint);
-        });
-
-        // Assert - All MDC should be cleared even after exception
-        assertNull(MDC.get("class_name"));
-        assertNull(MDC.get("method_name"));
-        assertNull(MDC.get("correlation_id"));
-        assertNull(MDC.get("execution_time_ms"));
-        assertNull(MDC.get("pre_existing_key"));
-    }
-
-    @Test
-    void shouldGenerateCorrelationIdIfNotPresent() throws Throwable {
-        // Arrange
-        TestService testService = new TestService();
-        when(joinPoint.getTarget()).thenReturn(testService);
-        when(joinPoint.getSignature()).thenReturn(signature);
-        when(signature.getName()).thenReturn("testMethod");
-
-        AtomicReference<String> capturedCorrelationId = new AtomicReference<>();
-        when(joinPoint.proceed()).thenAnswer(invocation -> {
-            capturedCorrelationId.set(MDC.get("correlation_id"));
-            return "result";
-        });
-
-        // Act
-        loggingAspect.logMethodExecution(joinPoint);
+        Object result = loggingAspect.logMethodExecution(joinPoint);
 
         // Assert
-        assertNotNull(capturedCorrelationId.get());
-        assertFalse(capturedCorrelationId.get().isEmpty());
+        StepVerifier.create((Mono<String>) result)
+                .expectNext("result")
+                .verifyComplete();
+
+        verify(mockLogger).info(eq("Method executed successfully in {} ms"), anyLong());
     }
 
     @Test
-    void shouldReuseExistingCorrelationId() throws Throwable {
+    void shouldLogMonoError() throws Throwable {
         // Arrange
-        TestService testService = new TestService();
-        String existingCorrelationId = "existing-correlation-id-123";
-        MDC.put("correlation_id", existingCorrelationId);
-
-        when(joinPoint.getTarget()).thenReturn(testService);
-        when(joinPoint.getSignature()).thenReturn(signature);
-        when(signature.getName()).thenReturn("testMethod");
-
-        AtomicReference<String> capturedCorrelationId = new AtomicReference<>();
-        when(joinPoint.proceed()).thenAnswer(invocation -> {
-            capturedCorrelationId.set(MDC.get("correlation_id"));
-            return "result";
-        });
+        RuntimeException exception = new RuntimeException("Error");
+        when(joinPoint.proceed()).thenReturn(Mono.error(exception));
 
         // Act
-        loggingAspect.logMethodExecution(joinPoint);
+        Object result = loggingAspect.logMethodExecution(joinPoint);
 
         // Assert
-        assertEquals(existingCorrelationId, capturedCorrelationId.get());
+        StepVerifier.create((Mono<String>) result)
+                .verifyError(RuntimeException.class);
+
+        verify(mockLogger).error(eq("Error executing method: {}"), anyString(), eq(exception));
     }
 
-    /**
-     * Helper method to create a LoggingAspect instance with a mock logger.
-     */
-    private LoggingAspect getTestLoggingAspect() {
-        mockLogger = mock(Logger.class);
-        return new LoggingAspect() {
-            @Override
-            protected Logger getLogger(Class<?> clazz) {
-                return mockLogger;
-            }
-        };
+    @Test
+    void shouldLogFluxSuccess() throws Throwable {
+        // Arrange
+        when(joinPoint.proceed()).thenReturn(Flux.just("result1", "result2"));
+
+        // Act
+        Object result = loggingAspect.logMethodExecution(joinPoint);
+
+        // Assert
+        StepVerifier.create((Flux<String>) result)
+                .expectNext("result1")
+                .expectNext("result2")
+                .verifyComplete();
+
+        verify(mockLogger).info(eq("Method executed successfully in {} ms"), anyLong());
     }
 
-    /**
-     * Mock service class for testing
-     */
+    @Test
+    void shouldLogFluxError() throws Throwable {
+        // Arrange
+        RuntimeException exception = new RuntimeException("Error");
+        when(joinPoint.proceed()).thenReturn(Flux.error(exception));
+
+        // Act
+        Object result = loggingAspect.logMethodExecution(joinPoint);
+
+        // Assert
+        StepVerifier.create((Flux<String>) result)
+                .verifyError(RuntimeException.class);
+
+        verify(mockLogger).error(eq("Error executing method: {}"), anyString(), eq(exception));
+    }
+
     private static class TestService {
-        @SuppressWarnings("unused")
         public String testMethod() {
             return "result";
         }

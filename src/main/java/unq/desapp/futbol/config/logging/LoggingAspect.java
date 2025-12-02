@@ -9,6 +9,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
 import org.springframework.stereotype.Component;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
+import reactor.core.publisher.Signal;
 
 /**
  * Aspect for cross-cutting logging concerns.
@@ -46,44 +49,73 @@ public class LoggingAspect {
      */
     @Around("serviceLayer() || webLayer()")
     public Object logMethodExecution(ProceedingJoinPoint joinPoint) throws Throwable {
-        // Get logger for the intercepted class
         Logger logger = getLogger(joinPoint.getTarget().getClass());
-
-        // Extract method information
         String className = joinPoint.getTarget().getClass().getSimpleName();
         String methodName = joinPoint.getSignature().getName();
-
-        // Inject MDC context
-        MDC.put("class_name", className);
-        MDC.put("method_name", methodName);
 
         // Generate or retrieve correlation ID
         String correlationId = MDC.get("correlation_id");
         if (correlationId == null || correlationId.isEmpty()) {
             correlationId = UUID.randomUUID().toString();
-            MDC.put("correlation_id", correlationId);
         }
 
         long startTime = System.currentTimeMillis();
 
         try {
-            // Execute the intercepted method
             Object result = joinPoint.proceed();
 
-            // Calculate execution time
-            long executionTime = System.currentTimeMillis() - startTime;
-            MDC.put("execution_time_ms", String.valueOf(executionTime));
+            if (result instanceof Mono) {
+                String finalCorrelationId = correlationId;
+                return ((Mono<?>) result)
+                        .doOnEach(signal -> log(logger, className, methodName, startTime, finalCorrelationId, signal))
+                        .contextWrite(ctx -> ctx.put("correlation_id", finalCorrelationId));
+            }
 
+            if (result instanceof Flux) {
+                String finalCorrelationId = correlationId;
+                return ((Flux<?>) result)
+                        .doOnEach(signal -> log(logger, className, methodName, startTime, finalCorrelationId, signal))
+                        .contextWrite(ctx -> ctx.put("correlation_id", finalCorrelationId));
+            }
+
+            logSuccess(logger, className, methodName, correlationId, startTime);
             return result;
         } catch (Throwable throwable) {
-            // Log error with exception details
-            logger.error(throwable.getMessage(), throwable);
-
-            // Rethrow exception to maintain Spring's exception handling flow
+            logError(logger, className, methodName, correlationId, startTime, throwable);
             throw throwable;
-        } finally {
-            // Always clear MDC to prevent thread contamination
-            MDC.clear();
+        }
+    }
+
+    private void log(Logger logger, String className, String methodName, long startTime,
+            String finalCorrelationId, Signal<?> signal) {
+        if (signal.isOnComplete()) {
+            logSuccess(logger, className, methodName, finalCorrelationId, startTime);
+        } else if (signal.isOnError()) {
+            logError(logger, className, methodName, finalCorrelationId, startTime,
+                    signal.getThrowable());
+        }
+    }
+
+    private void logSuccess(Logger logger, String className, String methodName, String correlationId, long startTime) {
+        long executionTime = System.currentTimeMillis() - startTime;
+        try (MDC.MDCCloseable c1 = MDC.putCloseable("class_name", className);
+                MDC.MDCCloseable c2 = MDC.putCloseable("method_name", methodName);
+                MDC.MDCCloseable c3 = MDC.putCloseable("correlation_id", correlationId);
+                MDC.MDCCloseable c4 = MDC.putCloseable("execution_time_ms", String.valueOf(executionTime))) {
+
+            logger.info("Method executed successfully in {} ms", executionTime);
+        }
+    }
+
+    private void logError(Logger logger, String className, String methodName, String correlationId, long startTime,
+            Throwable throwable) {
+        long executionTime = System.currentTimeMillis() - startTime;
+        try (MDC.MDCCloseable c1 = MDC.putCloseable("class_name", className);
+                MDC.MDCCloseable c2 = MDC.putCloseable("method_name", methodName);
+                MDC.MDCCloseable c3 = MDC.putCloseable("correlation_id", correlationId);
+                MDC.MDCCloseable c4 = MDC.putCloseable("execution_time_ms", String.valueOf(executionTime))) {
+
+            logger.error("Error executing method: {}", throwable.getMessage(), throwable);
         }
     }
 
