@@ -46,8 +46,8 @@ public class LoggingAspect {
      */
     @Around("serviceLayer() || webLayer()")
     public Object logMethodExecution(ProceedingJoinPoint joinPoint) throws Throwable {
-        // Get logger for the intercepted class (not for LoggingAspect)
-        Logger logger = LoggerFactory.getLogger(joinPoint.getTarget().getClass());
+        // Get logger for the intercepted class
+        Logger logger = getLogger(joinPoint.getTarget().getClass());
 
         // Extract method information
         String className = joinPoint.getTarget().getClass().getSimpleName();
@@ -85,5 +85,15 @@ public class LoggingAspect {
             // Always clear MDC to prevent thread contamination
             MDC.clear();
         }
+    }
+
+    /**
+     * Protected method to get logger.
+     *
+     * @param clazz the class to get the logger for
+     * @return the logger
+     */
+    protected Logger getLogger(Class<?> clazz) {
+        return LoggerFactory.getLogger(clazz);
     }
 }
