@@ -20,6 +20,7 @@ import unq.desapp.futbol.model.AuthRequest;
 import unq.desapp.futbol.model.AuthResponse;
 import unq.desapp.futbol.security.JwtTokenProvider;
 import unq.desapp.futbol.service.UserService;
+import unq.desapp.futbol.config.metrics.BusinessMetric;
 
 @RestController
 @Tag(name = "Authentication")
@@ -37,6 +38,7 @@ public class AuthController {
     }
 
     @PostMapping("/login")
+    @BusinessMetric(name = "user_login", help = "Counts user login attempts")
     @Operation(summary = "User Login", description = "Authenticates a user with email and password, returning a JWT.")
     @ApiResponse(responseCode = "200", description = "Authentication successful", content = @Content(schema = @Schema(implementation = AuthResponse.class)))
     @ApiResponse(responseCode = "401", description = "Invalid credentials", content = @Content)
@@ -48,6 +50,7 @@ public class AuthController {
     }
 
     @PostMapping("/register")
+    @BusinessMetric(name = "user_register", help = "Counts user registration attempts")
     @Operation(summary = "Register a new user", description = "Creates a new user account and returns a JWT.")
     @ApiResponse(responseCode = "201", description = "User registered successfully", content = @Content(schema = @Schema(implementation = AuthResponse.class)))
     @ApiResponse(responseCode = "400", description = "Invalid user data or email already taken", content = @Content)

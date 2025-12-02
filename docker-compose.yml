@@ -1,0 +1,142 @@
+version: '3.8'
+
+services:
+  # ===========================
+  # Spring Boot API Application
+  # ===========================
+  futbol-api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: futbol-api
+    ports:
+      - "8080:8080"  # Expose API to host machine
+    networks:
+      - monitoring
+    environment:
+      - SPRING_PROFILES_ACTIVE=dev
+    volumes:
+      # Persist H2 database between restarts
+      - ./data:/app/data
+    labels:
+      logging: "promtail"
+      application: "futbol-api"
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:8080/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # ===========================
+  # Prometheus Server
+  # ===========================
+  prometheus:
+    image: prom/prometheus:v2.53.0
+    container_name: prometheus
+    ports:
+      - "9090:9090"  # Prometheus UI
+    networks:
+      - monitoring
+    volumes:
+      # Mount Prometheus config file
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      # Persist metrics data
+      - prometheus-data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/usr/share/prometheus/console_libraries'
+      - '--web.console.templates=/usr/share/prometheus/consoles'
+      - '--web.enable-lifecycle'  # Allow reload via API
+    restart: unless-stopped
+    depends_on:
+      - futbol-api
+
+  # ===========================
+  # Grafana Dashboard
+  # ===========================
+  grafana:
+    image: grafana/grafana:10.4.2
+    container_name: grafana
+    ports:
+      - "3000:3000"  # Grafana UI
+    networks:
+      - monitoring
+    volumes:
+      # Persist dashboards and datasources
+      - grafana-data:/var/lib/grafana
+      # Auto-configure Prometheus datasource (optional)
+      - ./grafana/provisioning:/etc/grafana/provisioning
+    environment:
+      # Default admin credentials (CHANGE IN PRODUCTION!)
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+      - GF_USERS_ALLOW_SIGN_UP=false
+      # Enable anonymous access for dev (optional)
+      - GF_AUTH_ANONYMOUS_ENABLED=false
+    restart: unless-stopped
+    depends_on:
+      - prometheus
+
+  # ===========================
+  # Loki Log Aggregation
+  # ===========================
+  loki:
+    image: grafana/loki:3.0.0
+    container_name: loki
+    ports:
+      - "3100:3100"  # Loki API
+    networks:
+      - monitoring
+    volumes:
+      # Persist log data
+      - loki-data:/loki
+    command: -config.file=/etc/loki/local-config.yaml
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:3100/ready"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
+
+  # ===========================
+  # Promtail Log Collector
+  # ===========================
+  promtail:
+    image: grafana/promtail:3.0.0
+    container_name: promtail
+    networks:
+      - monitoring
+    volumes:
+      # Mount Promtail config
+      - ./promtail-config.yaml:/etc/promtail/config.yml:ro
+      # Access to Docker container logs
+      - /var/lib/docker/containers:/var/lib/docker/containers:ro
+      # Access to Docker socket for service discovery
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    command: -config.file=/etc/promtail/config.yml
+    restart: unless-stopped
+    depends_on:
+      - loki
+      - futbol-api
+
+# ===========================
+# Networks
+# ===========================
+networks:
+  monitoring:
+    driver: bridge
+    name: futbol-monitoring
+
+# ===========================
+# Volumes (Data Persistence)
+# ===========================
+volumes:
+  prometheus-data:
+    name: futbol-prometheus-data
+  grafana-data:
+    name: futbol-grafana-data
+  loki-data:
+    name: futbol-loki-data

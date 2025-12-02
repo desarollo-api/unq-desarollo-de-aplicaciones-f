@@ -18,6 +18,7 @@ import reactor.core.publisher.Mono;
 import unq.desapp.futbol.model.PlayerPerformance;
 import unq.desapp.futbol.model.User;
 import unq.desapp.futbol.service.PlayerService;
+import unq.desapp.futbol.config.metrics.BusinessMetric;
 
 @RestController
 @Tag(name = "Players")
@@ -32,6 +33,7 @@ public class PlayerController {
         }
 
         @GetMapping("/{name}")
+        @BusinessMetric(name = "player_performance_search", help = "Counts player performance searches")
         @Operation(summary = "Get Player Performance", description = "Returns performance for a specific player. This action is recorded in the user's search history.")
         @ApiResponses(value = {
                         @ApiResponse(responseCode = "200", description = "Successfully retrieved player data", content = @Content(mediaType = "application/json", schema = @Schema(implementation = PlayerPerformance.class))),

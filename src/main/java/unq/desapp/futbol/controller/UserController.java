@@ -19,6 +19,7 @@ import java.util.List;
 import unq.desapp.futbol.model.SearchHistoryEntry;
 import unq.desapp.futbol.model.SearchType;
 import unq.desapp.futbol.model.User;
+import unq.desapp.futbol.config.metrics.BusinessMetric;
 
 @RestController
 @Tag(name = "User")
@@ -27,6 +28,7 @@ import unq.desapp.futbol.model.User;
 public class UserController {
 
         @GetMapping("/history")
+        @BusinessMetric(name = "user_search_history", help = "Counts user search history requests")
         @Operation(summary = "Get User Search History", description = "Returns the search history for the authenticated user.")
         @ApiResponse(responseCode = "200", description = "Successfully retrieved search history", content = @Content(mediaType = "application/json", array = @ArraySchema(schema = @Schema(implementation = SearchHistoryEntry.class))))
         @ApiResponse(responseCode = "401", description = "Unauthorized - JWT token is missing or invalid", content = @Content)
