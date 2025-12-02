@@ -20,6 +20,7 @@ import unq.desapp.futbol.model.TeamStats;
 import unq.desapp.futbol.model.Player;
 import unq.desapp.futbol.model.User;
 import unq.desapp.futbol.service.TeamService;
+import unq.desapp.futbol.config.metrics.BusinessMetric;
 import java.util.List;
 
 @RestController
@@ -35,6 +36,7 @@ public class TeamController {
         }
 
         @GetMapping("/{country}/{name}/squad")
+        @BusinessMetric(name = "team_squad_search", help = "Counts team squad searches")
         @Operation(summary = "Get Team Squad", description = "Returns the squad for a given team. This action is recorded in the user's search history.")
         @ApiResponses(value = {
                         @ApiResponse(responseCode = "200", description = "Successfully retrieved the squad", content = @Content(mediaType = "application/json", array = @ArraySchema(schema = @Schema(implementation = Player.class)))),
@@ -53,6 +55,7 @@ public class TeamController {
         }
 
         @GetMapping("/{country}/{name}/matches")
+        @BusinessMetric(name = "team_matches_search", help = "Counts team matches searches")
         @Operation(summary = "Get Team Upcoming Matches", description = "Returns the upcoming matches for a given team. This action is recorded in the user's search history.")
         @ApiResponses(value = {
                         @ApiResponse(responseCode = "200", description = "Successfully retrieved the upcoming matches", content = @Content(mediaType = "application/json", array = @ArraySchema(schema = @Schema(implementation = UpcomingMatch.class)))),
@@ -71,6 +74,7 @@ public class TeamController {
         }
 
         @GetMapping("/{country}/{name}/prediction")
+        @BusinessMetric(name = "team_prediction_search", help = "Counts team prediction searches")
         @Operation(summary = "Predict Next Match Result", description = "Predicts the outcome of the team's next match using head-to-head history and current team statistics. This action is recorded in the user's search history.")
         @ApiResponses(value = {
                         @ApiResponse(responseCode = "200", description = "Successfully generated prediction", content = @Content(mediaType = "application/json", schema = @Schema(implementation = MatchPrediction.class))),
@@ -89,6 +93,7 @@ public class TeamController {
         }
 
         @GetMapping("/{country}/{name}/stats")
+        @BusinessMetric(name = "team_stats_search", help = "Counts team stats searches")
         @Operation(summary = "Get Team Statistics", description = "Returns aggregated statistics for a given team, based on its current squad and season performance. This action is recorded in the user's search history.")
         @ApiResponses(value = {
                         @ApiResponse(responseCode = "200", description = "Successfully retrieved team statistics", content = @Content(mediaType = "application/json", schema = @Schema(implementation = TeamStats.class))),
@@ -107,6 +112,7 @@ public class TeamController {
         }
 
         @GetMapping("/compare/{countryA}/{nameA}/vs/{countryB}/{nameB}")
+        @BusinessMetric(name = "team_comparison_search", help = "Counts team comparison searches")
         @Operation(summary = "Compare two teams", description = "Provides a side-by-side comparison of two teams based on their squad statistics. This action is recorded in the user's search history.")
         @ApiResponses(value = {
                         @ApiResponse(responseCode = "200", description = "Successfully generated comparison", content = @Content(mediaType = "application/json", schema = @Schema(implementation = TeamComparisonResponse.class))),
