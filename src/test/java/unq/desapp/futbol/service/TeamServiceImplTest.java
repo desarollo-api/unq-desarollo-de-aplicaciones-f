@@ -7,6 +7,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import java.util.Locale;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -511,10 +512,14 @@ class TeamServiceImplTest {
                                         assertThat(comparison).isNotNull();
                                         assertThat(comparison.getTeamA().getTeamName()).isEqualTo("River Plate");
                                         assertThat(comparison.getTeamB().getTeamName()).isEqualTo("Boca Juniors");
+                                        String expectedRating = String.format(Locale.US,
+                                                        "Higher average rating (%.1f vs %.1f)", 7.5, 7.1);
                                         assertThat(comparison.getTeamA().getAverageRating())
-                                                        .isEqualTo("Higher average rating (7.5 vs 7.1)");
+                                                        .isEqualTo(expectedRating);
+                                        String expectedWinRate = String.format(Locale.US,
+                                                        "Lower win rate (%.1f vs %.1f)%%", 50.0, 60.0);
                                         assertThat(comparison.getTeamB().getWinRate())
-                                                        .isEqualTo("Lower win rate (50.0 vs 60.0)%");
+                                                        .isEqualTo(expectedWinRate);
                                         assertThat(comparison.getVerdict()).contains("seems superior");
                                         assertThat(testUser.getSearchHistory()).hasSize(1);
                                         return true;

@@ -90,6 +90,7 @@ public class TeamController {
                 return teamService.getNextMatchPrediction(teamName, country, user)
                                 .map(ResponseEntity::ok)
                                 .defaultIfEmpty(ResponseEntity.notFound().build());
+
         }
 
         @GetMapping("/{country}/{name}/stats")

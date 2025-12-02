@@ -15,6 +15,8 @@ import org.springframework.util.StringUtils;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
 import unq.desapp.futbol.model.UpcomingMatch;
+import unq.desapp.futbol.exceptions.TeamNotFoundException;
+import unq.desapp.futbol.exceptions.NoUpcomingMatchException;
 import unq.desapp.futbol.service.ScrapingService;
 import unq.desapp.futbol.model.TeamStats;
 import unq.desapp.futbol.model.MatchPrediction;
@@ -57,6 +59,9 @@ public class ScrapingServiceImpl implements ScrapingService {
         return Mono.fromCallable(() -> fetchTeamSquadFromAPI(teamName, country))
                 .subscribeOn(Schedulers.boundedElastic())
                 .onErrorResume(e -> {
+                    if (e instanceof TeamNotFoundException) {
+                        return Mono.error(e);
+                    }
                     logger.error("Error fetching team squad for team: {} ({})", teamName, country, e);
                     return Mono.empty();
                 });
@@ -139,7 +144,7 @@ public class ScrapingServiceImpl implements ScrapingService {
             }
         }
 
-        throw new IOException("Team not found for name: '" + teamName + "' (" + country + ")");
+        throw new TeamNotFoundException("Team not found for name: '" + teamName + "' in country: '" + country + "'");
     }
 
     private int extractTeamId(String teamUrl) {
@@ -246,6 +251,9 @@ public class ScrapingServiceImpl implements ScrapingService {
         return Mono.fromCallable(() -> scrapeUpcomingMatches(teamName, country))
                 .subscribeOn(Schedulers.boundedElastic())
                 .onErrorResume(e -> {
+                    if (e instanceof TeamNotFoundException) {
+                        return Mono.error(e);
+                    }
                     logger.error("Error scraping upcoming matches for team: {} in country: {}", teamName, country, e);
                     return Mono.empty();
                 });
@@ -345,19 +353,21 @@ public class ScrapingServiceImpl implements ScrapingService {
         return Mono.fromCallable(() -> buildMatchPrediction(teamName, country))
                 .subscribeOn(Schedulers.boundedElastic())
                 .onErrorResume(e -> {
+                    if (e instanceof NoUpcomingMatchException || e instanceof TeamNotFoundException) {
+                        return Mono.error(e); // Re-throw our custom exception
+                    }
                     logger.error("Error generating match prediction for team: {} in country: {}", teamName, country, e);
-                    return Mono.empty();
+                    return Mono.empty(); // Return empty for other errors
                 });
     }
 
     private MatchPrediction buildMatchPrediction(String teamName, String country) throws IOException {
         List<List<Object>> fixtureMatches = buildFixtureMatches(teamName, country);
-        if (fixtureMatches.isEmpty())
-            return null;
 
         List<List<Object>> upcomingMatches = buildUpcomingMatches(fixtureMatches);
-        if (upcomingMatches.isEmpty())
-            return null;
+        if (upcomingMatches.isEmpty()) {
+            throw new NoUpcomingMatchException("This team has no upcoming matches.");
+        }
 
         List<Object> upcomingMatch = upcomingMatches.get(0);
         String matchId = upcomingMatch.get(0).toString();
@@ -436,6 +446,7 @@ public class ScrapingServiceImpl implements ScrapingService {
 
         String json = matcher.group(1)
                 .replaceFirst("(?s)showLeagueTableStandings.*?homeMatches", "homeMatches")
+                .replace("'", "\"")
                 .replaceAll("([\\{,]\\s*)(\\w+)(\\s*:)", "$1\"$2\"$3")
                 .replaceAll(",\\s*,", ",\"\",")
                 .replaceAll(",\\s*]", "]")
@@ -556,6 +567,9 @@ public class ScrapingServiceImpl implements ScrapingService {
         return Mono.fromCallable(() -> fetchTeamStats(teamName, country))
                 .subscribeOn(Schedulers.boundedElastic())
                 .onErrorResume(e -> {
+                    if (e instanceof TeamNotFoundException) {
+                        return Mono.error(e);
+                    }
                     logger.error("Error fetching team stats for team: {} ({})", teamName, country, e);
                     return Mono.empty();
                 });
