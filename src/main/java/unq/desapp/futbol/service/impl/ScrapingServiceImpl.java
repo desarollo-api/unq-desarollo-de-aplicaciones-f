@@ -436,6 +436,7 @@ public class ScrapingServiceImpl implements ScrapingService {
 
         String json = matcher.group(1)
                 .replaceFirst("(?s)showLeagueTableStandings.*?homeMatches", "homeMatches")
+                .replace("'", "\"")
                 .replaceAll("([\\{,]\\s*)(\\w+)(\\s*:)", "$1\"$2\"$3")
                 .replaceAll(",\\s*,", ",\"\",")
                 .replaceAll(",\\s*]", "]")

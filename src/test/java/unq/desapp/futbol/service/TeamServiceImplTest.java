@@ -512,9 +512,9 @@ class TeamServiceImplTest {
                                         assertThat(comparison.getTeamA().getTeamName()).isEqualTo("River Plate");
                                         assertThat(comparison.getTeamB().getTeamName()).isEqualTo("Boca Juniors");
                                         assertThat(comparison.getTeamA().getAverageRating())
-                                                        .isEqualTo("Higher average rating (7.5 vs 7.1)");
+                                                        .isEqualTo("Higher average rating (7,5 vs 7,1)");
                                         assertThat(comparison.getTeamB().getWinRate())
-                                                        .isEqualTo("Lower win rate (50.0 vs 60.0)%");
+                                                        .isEqualTo("Lower win rate (50,0 vs 60,0)%");
                                         assertThat(comparison.getVerdict()).contains("seems superior");
                                         assertThat(testUser.getSearchHistory()).hasSize(1);
                                         return true;
