@@ -1,0 +1,94 @@
+version: '3.8'
+
+services:
+  # ===========================
+  # Spring Boot API Application
+  # ===========================
+  futbol-api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: futbol-api
+    ports:
+      - "8080:8080"  # Expose API to host machine
+    networks:
+      - monitoring
+    environment:
+      - SPRING_PROFILES_ACTIVE=dev
+    volumes:
+      # Persist H2 database between restarts
+      - ./data:/app/data
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:8080/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # ===========================
+  # Prometheus Server
+  # ===========================
+  prometheus:
+    image: prom/prometheus:v2.53.0
+    container_name: prometheus
+    ports:
+      - "9090:9090"  # Prometheus UI
+    networks:
+      - monitoring
+    volumes:
+      # Mount Prometheus config file
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      # Persist metrics data
+      - prometheus-data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/usr/share/prometheus/console_libraries'
+      - '--web.console.templates=/usr/share/prometheus/consoles'
+      - '--web.enable-lifecycle'  # Allow reload via API
+    restart: unless-stopped
+    depends_on:
+      - futbol-api
+
+  # ===========================
+  # Grafana Dashboard
+  # ===========================
+  grafana:
+    image: grafana/grafana:10.4.2
+    container_name: grafana
+    ports:
+      - "3000:3000"  # Grafana UI
+    networks:
+      - monitoring
+    volumes:
+      # Persist dashboards and datasources
+      - grafana-data:/var/lib/grafana
+      # Auto-configure Prometheus datasource (optional)
+      - ./grafana/provisioning:/etc/grafana/provisioning
+    environment:
+      # Default admin credentials (CHANGE IN PRODUCTION!)
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+      - GF_USERS_ALLOW_SIGN_UP=false
+      # Enable anonymous access for dev (optional)
+      - GF_AUTH_ANONYMOUS_ENABLED=false
+    restart: unless-stopped
+    depends_on:
+      - prometheus
+
+# ===========================
+# Networks
+# ===========================
+networks:
+  monitoring:
+    driver: bridge
+    name: futbol-monitoring
+
+# ===========================
+# Volumes (Data Persistence)
+# ===========================
+volumes:
+  prometheus-data:
+    name: futbol-prometheus-data
+  grafana-data:
+    name: futbol-grafana-data
