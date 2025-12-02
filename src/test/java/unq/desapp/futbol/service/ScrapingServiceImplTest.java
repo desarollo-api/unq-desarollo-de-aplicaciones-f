@@ -17,6 +17,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import reactor.test.StepVerifier;
+import unq.desapp.futbol.exceptions.NoUpcomingMatchException;
+import unq.desapp.futbol.exceptions.TeamNotFoundException;
 import unq.desapp.futbol.service.impl.ScrapingServiceImpl;
 
 @Tag("e2e")
@@ -80,7 +82,7 @@ class ScrapingServiceImplTest {
         }
 
         @Test
-        void shouldReturnEmptyMonoWhenTeamNotFound() {
+        void shouldThrowTeamNotFoundExceptionWhenTeamNotFound() {
                 // Arrange
                 String teamName = "NonExistent Team";
                 String country = "Unknown";
@@ -94,7 +96,9 @@ class ScrapingServiceImplTest {
 
                 // Act & Assert
                 StepVerifier.create(scrapingService.findTeamSquad(teamName, country))
-                                .verifyComplete(); // Empty Mono
+                                .expectErrorMatches(throwable -> throwable instanceof TeamNotFoundException
+                                                && throwable.getMessage().contains("Team not found for name"))
+                                .verify();
         }
 
         @Test
@@ -355,7 +359,7 @@ class ScrapingServiceImplTest {
         }
 
         @Test
-        void shouldReturnEmptyMonoWhenNoUpcomingMatchesForPrediction() {
+        void shouldThrowNoUpcomingMatchExceptionWhenNoUpcomingMatchesForPrediction() {
                 // Arrange
                 String teamName = "Test Team";
                 String country = "Argentina";
@@ -376,7 +380,9 @@ class ScrapingServiceImplTest {
 
                 // Act & Assert
                 StepVerifier.create(scrapingService.predictNextMatch(teamName, country))
-                                .verifyComplete(); // Empty Mono (null)
+                                .expectErrorMatches(throwable -> throwable instanceof NoUpcomingMatchException
+                                                && throwable.getMessage().equals("This team has no upcoming matches."))
+                                .verify();
         }
 
         @Test
