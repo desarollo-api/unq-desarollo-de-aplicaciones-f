@@ -1,0 +1,10 @@
+---------------------------------------------------------------------
+TAG 3.0.0
+---------------------------------------------------------------------
+NEW FEATURES:
+* Endpoint for calculating advanced metrics for a team.
+* Endpoint for direct statistical comparison between two teams.
+* Implementation of endpoints for monitoring and advanced metrics.
+
+FIXED BUGS:
+* Added new error messages when scraping fails to find the data.
