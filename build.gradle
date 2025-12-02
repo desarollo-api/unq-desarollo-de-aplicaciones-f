@@ -45,10 +45,6 @@ tasks.withType(JavaCompile) {
     options.compilerArgs.add '-parameters'
 }
 
-tasks.withType(org.springframework.boot.gradle.tasks.bundling.BootJar) {
-    expand(project.properties)
-}
-
 tasks.named('test') {
 	useJUnitPlatform()
 }
