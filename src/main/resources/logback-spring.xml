@@ -16,6 +16,10 @@
             <!-- Include MDC (Mapped Diagnostic Context) for traceId and spanId -->
             <includeMdcKeyName>traceId</includeMdcKeyName>
             <includeMdcKeyName>spanId</includeMdcKeyName>
+            <includeMdcKeyName>class_name</includeMdcKeyName>
+            <includeMdcKeyName>method_name</includeMdcKeyName>
+            <includeMdcKeyName>correlation_id</includeMdcKeyName>
+            <includeMdcKeyName>execution_time_ms</includeMdcKeyName>
 
             <!-- Include caller data (class, method, line number) - useful for debugging -->
             <includeCallerData>false</includeCallerData>
